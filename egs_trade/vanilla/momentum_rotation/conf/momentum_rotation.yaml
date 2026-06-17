@@ -1,0 +1,41 @@
+data:
+  source: tushare
+  csv_dir: data/momentum_rotation
+  start_date: 2016-01-01
+  end_date: 2026-06-17
+  benchmark: 000300.SH
+
+split:
+  train_start: 2016-01-01
+  train_end: 2022-12-31
+  test_start: 2023-01-01
+  test_end: 2026-06-17
+
+strategy:
+  initial_cash: 100000
+  lookback_windows: [20, 60, 120]
+  momentum_weights: [0.5, 0.3, 0.2]
+  trend_windows: [20, 60]
+  volatility_window: 20
+  volatility_penalty: 0.5
+  min_avg_amount: 50000000
+  liquidity_window: 20
+  market_ma_window: 60
+  min_list_days: 180
+  exclude_st: true
+  lot_size: 100
+
+parameter_grid:
+  top_n: [5, 10, 20]
+  trailing_stop: [0.10, 0.15, 0.20]
+  market_filter_enabled: [true, false]
+
+order_cost:
+  open_commission: 0.0003
+  close_commission: 0.0003
+  close_tax: 0.001
+  min_commission: 5
+  slippage_bps: 5
+
+report:
+  save_plots: true
