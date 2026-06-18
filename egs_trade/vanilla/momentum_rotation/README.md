@@ -21,6 +21,9 @@ set TUSHARE_TOKEN=your-token
 python run_backtest.py --config conf/momentum_rotation.yaml --exp_dir exp/momentum_rotation
 ```
 
+如需避开 `stock_basic` 的低频率限制，可在配置的 `data` 下添加
+`stock_list: [000001.SZ, 600000.SH]`，直接验证指定股票的真实行情链路。
+
 离线验证可把配置里的 `data.source` 改为 `csv`，并提供：
 
 - `daily.csv`

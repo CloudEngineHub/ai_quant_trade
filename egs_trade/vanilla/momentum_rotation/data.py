@@ -102,6 +102,7 @@ def load_tushare_market_data(
         end_date: str,
         benchmark: str = "000300.SH",
         token_env: str = "TUSHARE_TOKEN",
+        stock_list: Optional[list] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fetch all listed A-share daily bars and cache them as CSV files."""
     token = os.environ.get(token_env)
@@ -130,15 +131,13 @@ def load_tushare_market_data(
     start = pd.Timestamp(start_date).strftime("%Y%m%d")
     end = pd.Timestamp(end_date).strftime("%Y%m%d")
 
-    stock_basic = pro.stock_basic(
-        exchange="",
-        list_status="L",
-        fields="ts_code,symbol,name,area,industry,market,list_date",
+    stock_basic, codes = select_tushare_universe(
+        pro,
+        stock_list=stock_list,
+        stock_basic_path=stock_basic_path,
     )
-    stock_basic.to_csv(stock_basic_path, index=False)
 
     frames = []
-    codes = stock_basic["ts_code"].dropna().tolist()
     for code in codes:
         df = pro.daily(ts_code=code, start_date=start, end_date=end)
         if len(df):
@@ -173,5 +172,31 @@ def load_market_data(
     if source == "csv":
         return load_local_market_data(csv_dir, start_date, end_date, benchmark)
     if source == "tushare":
-        return load_tushare_market_data(csv_dir, start_date, end_date, benchmark)
+        return load_tushare_market_data(
+            csv_dir,
+            start_date,
+            end_date,
+            benchmark,
+            stock_list=data_config.get("stock_list"),
+        )
     raise ValueError("Unsupported data.source: %s" % source)
+
+
+def select_tushare_universe(
+        pro,
+        stock_list: Optional[list],
+        stock_basic_path: Path,
+) -> Tuple[pd.DataFrame, list]:
+    if stock_list:
+        stock_basic = pd.DataFrame({"ts_code": list(stock_list)})
+        stock_basic.to_csv(stock_basic_path, index=False)
+        return stock_basic, list(stock_list)
+
+    stock_basic = pro.stock_basic(
+        exchange="",
+        list_status="L",
+        fields="ts_code,symbol,name,area,industry,market,list_date",
+    )
+    stock_basic.to_csv(stock_basic_path, index=False)
+    codes = stock_basic["ts_code"].dropna().tolist()
+    return stock_basic, codes

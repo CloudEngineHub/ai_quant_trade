@@ -8,7 +8,10 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from egs_trade.vanilla.momentum_rotation.data import normalize_trade_dates
+from egs_trade.vanilla.momentum_rotation.data import (
+    normalize_trade_dates,
+    select_tushare_universe,
+)
 from egs_trade.vanilla.momentum_rotation.run_backtest import run_from_config
 from egs_trade.vanilla.momentum_rotation.strategy import (
     MomentumRotationBacktester,
@@ -77,6 +80,24 @@ def make_panel(dates, price_by_code, amount=100000000.0):
 
 
 class MomentumRotationStrategyTest(unittest.TestCase):
+    def test_tushare_stock_list_skips_stock_basic_call(self):
+        class ExplodingPro:
+            def stock_basic(self, *args, **kwargs):
+                raise AssertionError("stock_basic should not be called")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            stock_basic_path = Path(tmp) / "stock_basic.csv"
+
+            stock_basic, codes = select_tushare_universe(
+                ExplodingPro(),
+                stock_list=["000001.SZ", "600000.SH"],
+                stock_basic_path=stock_basic_path,
+            )
+
+            self.assertEqual(["000001.SZ", "600000.SH"], codes)
+            self.assertEqual(["000001.SZ", "600000.SH"], stock_basic["ts_code"].tolist())
+            self.assertTrue(stock_basic_path.exists())
+
     def test_normalize_tushare_numeric_trade_dates(self):
         df = pd.DataFrame({
             "ts_code": ["AAA"],
