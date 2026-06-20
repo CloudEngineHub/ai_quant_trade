@@ -18,6 +18,13 @@
 3. 免费数据
     - Baostock
     - qstock (主要基于东方财富和同花顺的免费接口)
+    - AKShare (目前最全的免费金融数据接口库)
+    - efinance (基于东方财富的免费数据获取库)
+    - Qlib (微软开源AI量化框架，内置数据下载)
+    - CCXT (加密货币交易所统一接口库)
+    - FRED (美联储宏观经济数据)
+    - World Bank API (全球经济数据)
+    - 巨潮资讯网 (官方信息披露平台)
 
 # 2. 开源股票数据获取途径
 ## 2.1 开源免费python库
@@ -28,6 +35,7 @@
   * （*****）推荐使用
   * 微软开源AI量化框架，通过雅虎财经获取数据，可获取中国和美国区数据。该数据
   足够进行研究，但质量欠佳，实盘建议更换质量更高的数据。
+  * [示例代码](qlib/qlib_demo.py)
 
 - [证券宝](www.baostock.com) 
   * （*****）推荐使用
@@ -35,12 +43,14 @@
 
 - akshare [https://github.com/akfamily/akshare](https://github.com/akfamily/akshare)
   * （*****）推荐使用
-  * 非常完善的数据获取库，主要基于爬虫获取(目前我安装后，总是报错，尚未解决)
+  * 非常完善的数据获取库，主要基于爬虫获取，覆盖股票/期货/期权/基金/外汇/债券/宏观经济等
+  * [示例代码](akshare/akshare_demo.py)
 
 - efinance [https://github.com/Micro-sheep/efinance](https://github.com/Micro-sheep/efinance)
   * （*****）推荐使用
   * 非常完善的数据获取库，主要基于爬虫获取
   * 缺点: 没有大盘指数的接口
+  * [示例代码](efinance/efinance_demo.py)
 
 - yfinance
   * （***）推荐使用 (貌似只能获取国外股票行情数据)
@@ -55,10 +65,54 @@
   * （***）推荐使用
   * 不确定调用量限制，另外，获取的数据是json格式，需要自行整理数据
   * 查询不了历史数据，只能获取实时数据
-  * 其余还有腾讯财经API、网易财经API、
-    雅虎财经API(已关闭，但通过一些python库仍能获取相关数据)等
+  * [示例代码](web_api/demo_sina_data.ipynb)
 
-## 2.3 部分免费python库
+- 东方财富API
+  * （****）推荐使用
+  * 无需注册，返回JSON，数据丰富（K线/实时/资金流）
+  * 是akshare、efinance等库的底层数据源
+  * [示例代码](eastmoney/eastmoney_api.py)
+
+- 腾讯财经API
+  * （***）推荐使用
+  * 数据较丰富，支持实时行情和历史K线
+  * [示例代码](tencent/tencent_api.py)
+
+- 网易财经API
+  * （***）推荐使用
+  * 支持CSV下载，历史数据较长
+  * [示例代码](netease/netease_api.py)
+
+- 雅虎财经API(已关闭，但通过一些python库仍能获取相关数据)
+
+## 2.3 加密货币数据
+- CCXT [https://github.com/ccxt/ccxt](https://github.com/ccxt/ccxt)
+  * （*****）推荐使用
+  * 支持100+加密货币交易所的统一接口
+  * 公开行情数据无需API Key
+  * [示例代码](ccxt/ccxt_demo.py)
+
+## 2.4 海外宏观数据
+- FRED (Federal Reserve Economic Data)
+  * （*****）推荐使用
+  * 美联储免费宏观经济数据库，数据权威
+  * 需免费注册获取API Key
+  * [示例代码](fred/fred_demo.py)
+
+- World Bank API
+  * （****）推荐使用
+  * 世界银行免费全球经济数据，覆盖200+国家
+  * 无需API Key
+  * [示例代码](world_bank/world_bank_demo.py)
+
+## 2.5 官方披露数据
+- 巨潮资讯网 (CNINFO)
+  * （****）推荐使用
+  * 证监会指定法定信息披露网站
+  * 提供上市公司公告、年报、季报等
+  * [示例代码](cninfo/cninfo_demo.py)
+
+## 2.6 部分免费python库
 &emsp;&emsp;该部分数据质量相对较好，但不完全免费，存在部分限制。
 
 - 国内量化在线平台
@@ -80,8 +134,27 @@
   没有更新了，比较老，不知道VIP的接口获取的数据是否是不同的
 
 # 4. 数据源列表
-* TuShare - 中文财经数据接口包
-* Quandl - 国际金融和经济数据
+## 4.1 免费
+* Baostock - 免注册证券数据
+* qstock - 基于东方财富和同花顺的免费接口
+* AKShare - 最全免费金融数据接口库
+* efinance - 基于东方财富的免费数据获取库
+* Qlib - 微软开源AI量化框架
+* CCXT - 加密货币交易所统一接口库
+* FRED - 美联储宏观经济数据
+* World Bank API - 全球经济数据
+* 巨潮资讯网 - 官方信息披露平台
+* 新浪、雅虎、东方财富网、腾讯、网易 - 财经网API
+* 通达信 - 免费
+* 历史数据 - 文档 | BigQuant - 免费
+
+## 4.2 部分免费
+* TuShare - 中文财经数据接口包（免费额度有限）
+* 聚宽 - 提供3个月免费本地数据服务
+* 优矿、果仁、米筐 - 在线平台部分免费
+
+## 4.3 收费
+* Quandl - 国际金融和经济数据（部分免费）
 * Wind资讯-经济数据库 - 收费
 * 东方财富 Choice金融数据研究终端 - 收费
 * iFinD 同花顺金融数据终端 - 收费
@@ -94,9 +167,5 @@
 * 数库金融数据和深度分析API服务 - 收费
 * Historical Data Sources - 一个数据源索引
 * 预测者网 - 收费
-* 巨潮资讯 - 收费
 * 通联数据商城 - 收费
-* 通达信 - 免费
-* 历史数据 - 文档 | BigQuant - 免费
-* 新浪、雅虎、东方财富网 - 免费
 * 聚合数据、数粮 、数据宝 - 收费
