@@ -1,6 +1,6 @@
-xlwings
-qstock
-pandas
-openpyxl
-pyyaml
-pytest
+xlwings==0.36.6
+qstock==1.3.8
+pandas==3.0.3
+openpyxl==3.1.5
+pyyaml==6.0.3
+pytest==9.0.3
