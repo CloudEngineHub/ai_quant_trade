@@ -82,7 +82,12 @@ class XueqiuAPI:
             'access_token': None
         }
         r = self.session.get(url, params=params)
-        data = r.json()
+        try:
+            data = r.json()
+        except Exception:
+            print(f"雪球接口返回非JSON，状态码: {r.status_code}")
+            print("可能需要登录获取Cookie（xq_a_token）")
+            return pd.DataFrame()
         posts = data.get('list', [])
         if not posts:
             print("未获取到帖子")
@@ -122,7 +127,12 @@ class XueqiuAPI:
             'type': '11,12',
         }
         r = self.session.get(url, params=params)
-        data = r.json()
+        try:
+            data = r.json()
+        except Exception:
+            print(f"雪球接口返回非JSON，状态码: {r.status_code}")
+            print("可能需要登录获取Cookie（xq_a_token）")
+            return pd.DataFrame()
         posts = data.get('list', [])
         if not posts:
             print("未获取到热门帖子")

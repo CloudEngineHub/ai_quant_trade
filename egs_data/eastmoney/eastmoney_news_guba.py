@@ -18,39 +18,45 @@
 
 """
 东方财富新闻与股吧舆情接口示例
-覆盖：个股新闻、股吧帖子、股吧热度
+覆盖：个股公告新闻、股吧帖子、股吧热度
 无需安装额外库，使用 requests + pandas 即可
 """
 
 import requests
 import pandas as pd
+import re
+import json
 import time
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 120)
-pd.set_option('display.max_colwidth', 40)
+pd.set_option('display.max_colwidth', 50)
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Referer': 'https://so.eastmoney.com/'
+    'Referer': 'https://data.eastmoney.com/'
 }
 
 
-def get_stock_news(keyword='601318', page=1, page_size=10):
+def get_stock_news(stock_code='601318', page=1, page_size=10):
     """
-    搜索东方财富个股新闻
-    :param keyword: 股票代码或关键词
+    获取东方财富个股公告新闻
+    :param stock_code: 股票代码，如 601318
     :param page: 页码
     :param page_size: 每页数量
     :return: DataFrame
     """
-    url = 'https://search-api-web.eastmoney.com/chinese/json'
+    url = 'https://np-anotice-stock.eastmoney.com/api/security/ann'
     params = {
         'cb': 'jQuery',
-        'param': f'{{"uid":"", "keyword":"{keyword}", "type":["cmsArticleWebOld"],'
-                 f'"client":"web", "clientType":"web", "clientVersion":"curr", '
-                 f'"param":{{"pageNumber":{page}, "pageSize":{page_size},'
-                 f'"sort":"default", "desc":"true"}}}}'
+        'sr': '-1',
+        'page_size': page_size,
+        'page_index': page,
+        'ann_type': 'A',
+        'client_source': 'web',
+        'stock_list': stock_code,
+        'f_node': '0',
+        's_node': '0',
     }
     r = requests.get(url, params=params, headers=HEADERS)
     text = r.text
@@ -59,110 +65,117 @@ def get_stock_news(keyword='601318', page=1, page_size=10):
         text = text[text.index('(') + 1: text.rindex(')')]
     import json
     data = json.loads(text)
-    articles = data.get('result', {}).get('list', [])
-    if not articles:
+    items = data.get('data', {}).get('list', [])
+    if not items:
         print("未搜索到新闻")
         return pd.DataFrame()
 
     rows = []
-    for a in articles:
+    for item in items:
+        codes = item.get('codes', [{}])
         rows.append({
-            '标题': a.get('title', '').replace('<em>', '').replace('</em>', ''),
-            '内容': a.get('content', '')[:100],
-            '发布时间': a.get('date', ''),
-            '来源': a.get('mediaName', ''),
-            '新闻链接': a.get('url', ''),
+            '标题': item.get('title', ''),
+            '发布时间': item.get('notice_date', ''),
+            '股票代码': codes[0].get('stock_code', '') if codes else '',
+            '股票名称': codes[0].get('short_name', '') if codes else '',
+            '公告类型': item.get('columns', [{}])[0].get('column_name', '') if item.get('columns') else '',
+            '公告链接': f"https://np-anotice-stock.eastmoney.com/api/security/ann?art_code={item.get('art_code', '')}",
         })
     return pd.DataFrame(rows)
 
 
 def get_guba_posts(code='601318', page=1, page_size=20):
     """
-    获取东方财富股吧帖子
+    获取东方财富股吧帖子（通过解析页面内嵌JSON数据）
     :param code: 股票代码
     :param page: 页码
     :param page_size: 每页数量
     :return: DataFrame
     """
-    # 股吧接口（内部API，非官方公开）
-    url = 'https://guba.eastmoney.com/interface/GetData.aspx'
     headers = {
         'User-Agent': HEADERS['User-Agent'],
         'Referer': f'https://guba.eastmoney.com/list,{code}.html'
     }
-    data = {
-        'param': f'source=SearchResult&code={code}&type=post&sort=1&'
-                 f'pagesize={page_size}&page={page}&name=zhibiao'
-    }
-    r = requests.post(url, data=data, headers=headers)
-    try:
-        result = r.json()
-    except Exception:
-        # 部分接口返回非JSON，尝试解析
-        print(f"股吧接口返回格式异常，状态码: {r.status_code}")
+    url = f'https://guba.eastmoney.com/list,{code},f_{page}.html'
+    r = requests.get(url, headers=headers, timeout=15)
+    # 页面内嵌 article_list 变量包含帖子JSON数据
+    match = re.search(r'var article_list=(\{.*?\});', r.text, re.DOTALL)
+    if not match:
+        print("未找到股吧帖子数据（页面结构可能已变更）")
         return pd.DataFrame()
 
-    posts = result.get('Data', {}).get('data', []) if isinstance(result, dict) else []
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        print("股吧数据解析失败")
+        return pd.DataFrame()
+
+    posts = data.get('re', [])
     if not posts:
         print("未获取到股吧帖子")
         return pd.DataFrame()
 
     rows = []
     for p in posts[:page_size]:
+        title = p.get('post_title', '') or (p.get('post_content', '') or '')[:50]
         rows.append({
-            '标题': p.get('post_title', ''),
-            '作者': p.get('user_name', ''),
-            '发布时间': pd.to_datetime(
-                p.get('post_last_time', 0), unit='s'
-            ).strftime('%Y-%m-%d %H:%M') if p.get('post_last_time') else '',
+            '标题': title,
+            '发布时间': p.get('post_publish_time', ''),
             '阅读量': p.get('post_click_count', 0),
             '评论数': p.get('post_comment_count', 0),
+            '点赞数': p.get('post_like_count', 0),
+            '来源': p.get('post_from', ''),
         })
     return pd.DataFrame(rows)
 
 
-def get_guba_hot_list():
+def get_guba_hot_list(page=1, page_size=20):
     """
-    获取股吧热门帖子列表
+    获取股吧热门帖子列表（全局热门，通过东财热门股吧页面）
     :return: DataFrame
     """
-    url = 'https://guba.eastmoney.com/interface/GetData.aspx'
     headers = {
         'User-Agent': HEADERS['User-Agent'],
         'Referer': 'https://guba.eastmoney.com/'
     }
-    data = {
-        'param': 'source=ZhibiaoRank&ranktype=1&sort=1&pagesize=20&page=1&name=zhibiao'
-    }
-    r = requests.post(url, data=data, headers=headers)
-    try:
-        result = r.json()
-    except Exception:
-        print(f"股吧热门接口返回格式异常，状态码: {r.status_code}")
+    # 热门股吧 - 使用上证指数股吧作为热门入口
+    url = f'https://guba.eastmoney.com/list,000001,f_{page}.html'
+    r = requests.get(url, headers=headers, timeout=15)
+    match = re.search(r'var article_list=(\{.*?\});', r.text, re.DOTALL)
+    if not match:
+        print("未找到热门帖子数据（页面结构可能已变更）")
         return pd.DataFrame()
 
-    posts = result.get('Data', {}).get('data', []) if isinstance(result, dict) else []
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        print("热门数据解析失败")
+        return pd.DataFrame()
+
+    posts = data.get('re', [])
     if not posts:
         print("未获取到热门帖子")
         return pd.DataFrame()
 
     rows = []
-    for p in posts[:20]:
+    for p in posts[:page_size]:
+        title = p.get('post_title', '') or (p.get('post_content', '') or '')[:50]
         rows.append({
-            '标题': p.get('post_title', ''),
-            '作者': p.get('user_name', ''),
+            '标题': title,
+            '发布时间': p.get('post_publish_time', ''),
             '阅读量': p.get('post_click_count', 0),
             '评论数': p.get('post_comment_count', 0),
+            '点赞数': p.get('post_like_count', 0),
         })
     return pd.DataFrame(rows)
 
 
 if __name__ == '__main__':
-    # 1. 个股新闻
+    # 1. 个股公告新闻
     print("=" * 60)
-    print("1. 中国平安(601318) 新闻搜索")
+    print("1. 中国平安(601318) 公告新闻")
     print("=" * 60)
-    df = get_stock_news(keyword='601318', page=1, page_size=10)
+    df = get_stock_news(stock_code='601318', page=1, page_size=10)
     print(df)
 
     time.sleep(1)

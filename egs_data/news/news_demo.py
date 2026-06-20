@@ -24,10 +24,55 @@
 
 import akshare as ak
 import pandas as pd
+import signal
+import functools
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 120)
 pd.set_option('display.max_colwidth', 40)
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("请求超时")
+
+
+def with_timeout(seconds=30):
+    """装饰器：给函数调用添加超时限制"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # 设置信号处理器（仅在主线程有效）
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except TimeoutError:
+                raise TimeoutError(f"请求超时（{seconds}秒）")
+            finally:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
+        return wrapper
+    return decorator
+
+
+def safe_call(func, name, timeout_sec=30):
+    """安全调用接口，捕获异常避免中断"""
+    try:
+        wrapped = with_timeout(timeout_sec)(func)
+        df = wrapped()
+        if df is not None and not df.empty:
+            print(df.head())
+        else:
+            print("未获取到数据")
+        return df
+    except Exception as e:
+        print(f"获取失败: {str(e)[:100]}")
+        return None
 
 
 def demo_stock_news():
@@ -35,8 +80,7 @@ def demo_stock_news():
     print("=" * 60)
     print("1. 中国平安(601318) 个股新闻")
     print("=" * 60)
-    df = ak.stock_news_em(symbol="601318")
-    print(df.head())
+    safe_call(lambda: ak.stock_news_em(symbol="601318"), "stock_news_em")
     # 字段：标题、内容、发布时间、文章来源、新闻链接
 
 
@@ -45,8 +89,7 @@ def demo_global_cls():
     print("\n" + "=" * 60)
     print("2. 财联社电报快讯")
     print("=" * 60)
-    df = ak.stock_info_global_cls(symbol="全部")
-    print(df.head())
+    safe_call(lambda: ak.stock_info_global_cls(symbol="全部"), "stock_info_global_cls")
     # 字段：标题、内容、发布时间
 
 
@@ -55,8 +98,7 @@ def demo_global_em():
     print("\n" + "=" * 60)
     print("3. 东方财富全球财经快讯")
     print("=" * 60)
-    df = ak.stock_info_global_em()
-    print(df.head())
+    safe_call(lambda: ak.stock_info_global_em(), "stock_info_global_em")
 
 
 def demo_global_sina():
@@ -64,8 +106,7 @@ def demo_global_sina():
     print("\n" + "=" * 60)
     print("4. 新浪财经全球快讯")
     print("=" * 60)
-    df = ak.stock_info_global_sina()
-    print(df.head())
+    safe_call(lambda: ak.stock_info_global_sina(), "stock_info_global_sina")
 
 
 def demo_news_cctv():
@@ -73,8 +114,7 @@ def demo_news_cctv():
     print("\n" + "=" * 60)
     print("5. 新闻联播文字稿（2024-04-24）")
     print("=" * 60)
-    df = ak.news_cctv(date="20240424")
-    print(df.head())
+    safe_call(lambda: ak.news_cctv(date="20240424"), "news_cctv")
     # 字段：标题、内容
 
 
@@ -83,8 +123,7 @@ def demo_news_main_cx():
     print("\n" + "=" * 60)
     print("6. 财新网主要财经新闻")
     print("=" * 60)
-    df = ak.stock_news_main_cx()
-    print(df.head())
+    safe_call(lambda: ak.stock_news_main_cx(), "stock_news_main_cx")
 
 
 def demo_weibo_report():
@@ -92,8 +131,8 @@ def demo_weibo_report():
     print("\n" + "=" * 60)
     print("7. 微博舆情报告（最近12小时）")
     print("=" * 60)
-    df = ak.stock_js_weibo_report(time_period="CNHOUR12")
-    print(df.head())
+    safe_call(lambda: ak.stock_js_weibo_report(time_period="CNHOUR12"),
+              "stock_js_weibo_report")
     # 字段：股票代码、股票名称、微博舆情指数、正负面情绪占比
 
 
@@ -102,8 +141,7 @@ def demo_news_sentiment():
     print("\n" + "=" * 60)
     print("8. 新闻情绪指数")
     print("=" * 60)
-    df = ak.index_news_sentiment_scope()
-    print(df.tail())
+    safe_call(lambda: ak.index_news_sentiment_scope(), "index_news_sentiment_scope")
     # 字段：日期、新闻情绪指数
 
 
@@ -112,8 +150,7 @@ def demo_futures_news():
     print("\n" + "=" * 60)
     print("9. 上海期货交易所新闻")
     print("=" * 60)
-    df = ak.futures_news_shmet(symbol="全部")
-    print(df.head())
+    safe_call(lambda: ak.futures_news_shmet(symbol="全部"), "futures_news_shmet")
 
 
 if __name__ == '__main__':

@@ -66,3 +66,9 @@
 * 无官方文档，字段含义可能变化
 * 建议调用间隔大于 0.5 秒
 * 部分接口需要设置 Referer 头
+
+# 5. 示例文件
+| 文件 | 说明 |
+|------|------|
+| [eastmoney_api.py](eastmoney_api.py) | K线/实时行情/资金流向数据 |
+| [eastmoney_news_guba.py](eastmoney_news_guba.py) | 个股公告新闻、股吧帖子、股吧热度 |
