@@ -90,6 +90,45 @@ def create_template(output_path: str = None, config: AppConfig = None):
         for col in ws.columns:
             ws.column_dimensions[col[0].column_letter].width = 15
 
+    # === Sheet 5: 配置 ===
+    ws5 = wb.create_sheet(cfg.sheets["config"])
+    # 标题
+    ws5["A1"] = "=== 全局配置 ==="
+    ws5["A1"].font = Font(bold=True, size=14)
+    # 键值对表头
+    ws5["A2"] = "配置项"
+    ws5["B2"] = "值"
+    _style_header(ws5["A2"])
+    _style_header(ws5["B2"])
+    # 标量配置项
+    ws5["A3"] = "刷新间隔(秒)"
+    ws5["B3"] = cfg.refresh_interval
+    ws5["A4"] = "预警弹窗"
+    ws5["B4"] = "true" if cfg.alert_popup_enabled else "false"
+    ws5["A5"] = "新闻条数"
+    ws5["B5"] = cfg.news_max_rows
+    ws5["A6"] = "配置重载间隔"
+    ws5["B6"] = cfg.config_reload_interval
+
+    # 空行后是列表配置
+    ws5["A8"] = "=== 列表配置 ==="
+    ws5["A8"].font = Font(bold=True, size=14)
+    ws5["A9"] = "自选股"
+    ws5["B9"] = "指数"
+    _style_header(ws5["A9"])
+    _style_header(ws5["B9"])
+    # 写入自选股和指数列表
+    max_len = max(len(cfg.watch_stocks), len(cfg.market_indices))
+    for i in range(max_len):
+        row = 10 + i
+        if i < len(cfg.watch_stocks):
+            ws5.cell(row=row, column=1, value=cfg.watch_stocks[i])
+        if i < len(cfg.market_indices):
+            ws5.cell(row=row, column=2, value=cfg.market_indices[i])
+
+    ws5.column_dimensions["A"].width = 20
+    ws5.column_dimensions["B"].width = 20
+
     wb.save(path)
     print(f"模板已生成: {path}")
     return path

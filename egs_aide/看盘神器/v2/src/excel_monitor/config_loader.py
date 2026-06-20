@@ -22,6 +22,7 @@ class AppConfig:
         "detailed_quotes": "详细行情",
         "news": "新闻",
         "custom_watch": "个性定制看盘",
+        "config": "配置",
     })
 
     # 大盘指数列表（qstock 简称）
@@ -50,6 +51,9 @@ class AppConfig:
 
     # 是否启用预警弹窗
     alert_popup_enabled: bool = True
+
+    # 配置重载间隔（每 N 次 refresh 重新从 Excel 读取股票代码和预警条件）
+    config_reload_interval: int = 5
 
     # 新闻显示条数
     news_max_rows: int = 50

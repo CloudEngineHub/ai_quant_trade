@@ -244,3 +244,55 @@ def test_custom_watch_no_alert_when_within_range():
     # 有预警条件但未触发
     assert len(sheet._alert_conditions) == 1
     mock_excel.highlight_row.assert_not_called()
+
+
+def test_custom_watch_reload_after_n_refreshes():
+    """测试每 N 次刷新后重新读取 Excel 配置"""
+    mock_excel = MagicMock()
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    # 初始：2 只股票
+    initial_df = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台"],
+        "名称": ["中国平安", "贵州茅台"],
+    })
+    # 刷新后：用户修改为 3 只股票（模拟实时修改）
+    updated_df = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台", "宁德时代"],
+        "名称": ["中国平安", "贵州茅台", "宁德时代"],
+    })
+
+    # sheet_to_df 在 init 时调用一次，refresh 2 重载时再调用一次
+    # refresh 1 不重载所以不调用 sheet_to_df
+    mock_excel.sheet_to_df.side_effect = [
+        (initial_df, 3, 2),  # init
+        (updated_df, 4, 2),  # refresh 2 (重载，config_reload_interval=2)
+    ]
+
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台"],
+        "名称": ["中国平安", "贵州茅台"],
+        "最新": [45.0, 1800.0],
+        "涨幅": [1.5, 0.8],
+        "时间": ["10:30:00", "10:30:00"],
+    })
+
+    config = AppConfig()
+    config.alert_popup_enabled = False
+    config.config_reload_interval = 2  # 每 2 次刷新重载
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, config)
+    sheet.sheet = MagicMock()
+
+    # init: 读取初始 2 只股票
+    sheet.init()
+    assert len(sheet._stock_codes) == 2
+
+    # refresh 1: 不重载（count=1, 1%2!=0）
+    sheet.refresh()
+    assert len(sheet._stock_codes) == 2
+
+    # refresh 2: 重载（count=2, 2%2==0），应读到 3 只股票
+    sheet.refresh()
+    assert len(sheet._stock_codes) == 3
+    assert "宁德时代" in sheet._stock_codes

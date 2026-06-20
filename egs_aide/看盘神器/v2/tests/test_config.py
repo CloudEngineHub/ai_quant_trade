@@ -49,6 +49,18 @@ def test_alert_popup_default_enabled():
     assert cfg.alert_popup_enabled is True
 
 
+def test_config_reload_interval_default():
+    """测试配置重载间隔默认值"""
+    cfg = AppConfig()
+    assert cfg.config_reload_interval == 5
+
+
+def test_config_sheet_name():
+    """测试配置 Sheet 名称"""
+    cfg = AppConfig()
+    assert cfg.sheets["config"] == "配置"
+
+
 def test_load_config_from_yaml():
     """测试从 YAML 文件加载配置"""
     yaml_content = """

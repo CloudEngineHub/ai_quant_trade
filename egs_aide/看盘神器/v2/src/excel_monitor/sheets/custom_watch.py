@@ -34,9 +34,15 @@ class CustomWatchSheet(BaseSheet):
         self._alert_conditions: List[AlertCondition] = []
         # 数据列数（用于写入时只清除数据区域，保留预警条件列）
         self._data_col_count = len(self.config.custom_watch_columns)
+        # 刷新计数器（用于定时重载配置）
+        self._refresh_count = 0
 
     def init(self):
-        """从 Excel 读取自选股代码和预警条件"""
+        """从 Excel 读取自选股代码和预警条件（首次加载）"""
+        self._reload_from_excel()
+
+    def _reload_from_excel(self):
+        """从 Excel 重新读取自选股代码和预警条件"""
         df, _, _ = self.excel_mgr.sheet_to_df(self.sheet)
 
         if not df.empty and "代码" in df.columns:
@@ -119,6 +125,13 @@ class CustomWatchSheet(BaseSheet):
     def refresh(self):
         """刷新定制看盘数据 + 检查预警"""
         self._logger.info("刷新个性定制看盘...")
+
+        # 每隔 N 次刷新，重新从 Excel 读取股票代码和预警条件（支持实时修改）
+        self._refresh_count += 1
+        reload_interval = self.config.config_reload_interval
+        if reload_interval > 0 and self._refresh_count % reload_interval == 0:
+            self._logger.info(f"第 {self._refresh_count} 次刷新，重载 Excel 配置...")
+            self._reload_from_excel()
 
         if not self._stock_codes:
             self._logger.warning("无自选股，跳过刷新")

@@ -23,6 +23,7 @@ if _SRC_DIR not in sys.path:
 from excel_monitor.config_loader import AppConfig, load_config
 from excel_monitor.core.data_provider import DataProvider
 from excel_monitor.core.excel_manager import ExcelManager
+from excel_monitor.core.config_sheet_reader import ConfigSheetReader
 from excel_monitor.sheets.market_overview import MarketOverviewSheet
 from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
 from excel_monitor.sheets.news_sheet import NewsSheet
@@ -72,6 +73,11 @@ def main():
     # 3. 初始化组件
     excel_mgr = ExcelManager(template_path)
     data_provider = DataProvider()
+
+    # 3.5 从 Excel "配置" Sheet 读取配置，覆盖 YAML 默认值
+    config_reader = ConfigSheetReader(excel_mgr)
+    cfg = config_reader.read_config(cfg.sheets["config"], cfg)
+    logger.info(f"刷新间隔: {cfg.refresh_interval}s, 配置重载间隔: {cfg.config_reload_interval}次")
 
     # 4. 创建 Sheet Handlers
     handlers = [

@@ -92,11 +92,12 @@ def test_e2e_template_generation():
         # 用 openpyxl 验证结构
         wb = load_workbook(template_path)
         sheet_names = wb.sheetnames
-        _assert(len(sheet_names) == 4, f"Sheet 数量 = 4 (实际: {len(sheet_names)})")
+        _assert(len(sheet_names) == 5, f"Sheet 数量 = 5 (实际: {len(sheet_names)})")
         _assert("大盘" in sheet_names, "包含'大盘' Sheet")
         _assert("详细行情" in sheet_names, "包含'详细行情' Sheet")
         _assert("新闻" in sheet_names, "包含'新闻' Sheet")
         _assert("个性定制看盘" in sheet_names, "包含'个性定制看盘' Sheet")
+        _assert("配置" in sheet_names, "包含'配置' Sheet")
 
         # 验证"详细行情" Sheet 有表头和示例数据
         ws_detail = wb["详细行情"]
@@ -122,6 +123,19 @@ def test_e2e_template_generation():
         _assert(ws_custom["O2"].value == 5.0, "中国平安 涨跌幅上限 = 5.0")
         _assert(ws_custom["P2"].value == 40.0, "中国平安 价格下限 = 40.0")
         _assert(ws_custom["Q3"].value == 2000.0, "贵州茅台 价格上限 = 2000.0")
+
+        # 验证"配置" Sheet
+        ws_config = wb["配置"]
+        _assert(ws_config["A2"].value == "配置项", "配置 A2 = '配置项'")
+        _assert(ws_config["B2"].value == "值", "配置 B2 = '值'")
+        _assert(ws_config["A3"].value == "刷新间隔(秒)", "配置 A3 = '刷新间隔(秒)'")
+        _assert(ws_config["B3"].value == 3, "配置 B3 = 3")
+        _assert(ws_config["A4"].value == "预警弹窗", "配置 A4 = '预警弹窗'")
+        _assert(ws_config["A6"].value == "配置重载间隔", "配置 A6 = '配置重载间隔'")
+        _assert(ws_config["A9"].value == "自选股", "配置 A9 = '自选股'")
+        _assert(ws_config["B9"].value == "指数", "配置 B9 = '指数'")
+        _assert(ws_config["A10"].value == "中国平安", "配置 A10 = '中国平安'")
+        _assert(ws_config["B10"].value == "上证指数", "配置 B10 = '上证指数'")
 
         # 验证表头样式（蓝色填充）
         fill = ws_detail["A1"].fill
