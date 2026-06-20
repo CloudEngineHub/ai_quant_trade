@@ -1,0 +1,5 @@
+xlwings
+qstock
+pandas
+openpyxl
+pytest

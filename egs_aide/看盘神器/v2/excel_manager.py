@@ -1,0 +1,76 @@
+# -*- coding: utf-8 -*-
+"""Excel 管理器：封装 xlwings 工作簿操作"""
+import os
+import logging
+from typing import Optional, Tuple
+
+import xlwings as xw
+import pandas as pd
+
+
+class ExcelManager:
+    """管理 Excel 工作簿的打开、读写"""
+
+    def __init__(self, xlsx_path: str):
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._xlsx_path = xlsx_path
+
+        if not os.path.exists(xlsx_path):
+            raise FileNotFoundError(f"Excel 文件不存在: {xlsx_path}")
+
+        self.wb = xw.Book(xlsx_path)
+        self._logger.info(f"已打开 Excel: {xlsx_path}")
+
+    def get_sheet_by_name(self, name: str) -> Optional[xw.Sheet]:
+        """按名称获取 Sheet"""
+        try:
+            return self.wb.sheets[name]
+        except Exception:
+            self._logger.warning(f"Sheet 不存在: {name}")
+            return None
+
+    def sheet_to_df(self, sheet: xw.Sheet) -> Tuple[pd.DataFrame, int, int]:
+        """将 Sheet 转为 DataFrame，返回 (df, row_num, col_num)"""
+        row_num = sheet.api.UsedRange.Rows.count
+        col_num = sheet.api.UsedRange.Columns.count
+
+        if row_num <= 1 and col_num <= 1:
+            val = sheet.range((1, 1)).value
+            if val is None:
+                return pd.DataFrame(), 0, 0
+
+        df = sheet.range(
+            (1, 1), (row_num, col_num)
+        ).options(pd.DataFrame, headers=True, index=False).value
+
+        if df is None:
+            return pd.DataFrame(), 0, 0
+
+        return df, row_num, col_num
+
+    def write_df(self, sheet: xw.Sheet, df: pd.DataFrame,
+                 start_row: int = 1, start_col: int = 1):
+        """将 DataFrame 写入 Sheet"""
+        if df is None or df.empty:
+            self._logger.debug(f"写入空数据，跳过: {sheet.name}")
+            return
+
+        n_rows = df.shape[0]
+        n_cols = df.shape[1]
+        # 写入列名 + 数据（共 n_rows+1 行）
+        sheet.range(
+            (start_row, start_col),
+            (start_row + n_rows, start_col + n_cols - 1)
+        ).value = df
+
+    def clear_range(self, sheet: xw.Sheet, start_row: int = 1,
+                    start_col: int = 1, end_row: int = 200, end_col: int = 50):
+        """清除指定区域内容"""
+        sheet.range((start_row, start_col), (end_row, end_col)).clear_contents()
+
+    def close(self):
+        """关闭工作簿"""
+        try:
+            self.wb.close()
+        except Exception as e:
+            self._logger.error(f"关闭 Excel 失败: {e}")
