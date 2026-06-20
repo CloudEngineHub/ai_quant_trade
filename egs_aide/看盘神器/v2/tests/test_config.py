@@ -33,6 +33,22 @@ def test_custom_watch_columns():
     assert "名称" in cfg.custom_watch_columns
 
 
+def test_alert_columns():
+    """测试预警条件列配置"""
+    cfg = AppConfig()
+    assert "涨跌幅下限" in cfg.alert_columns
+    assert "涨跌幅上限" in cfg.alert_columns
+    assert "价格下限" in cfg.alert_columns
+    assert "价格上限" in cfg.alert_columns
+    assert len(cfg.alert_columns) == 4
+
+
+def test_alert_popup_default_enabled():
+    """测试预警弹窗默认开启"""
+    cfg = AppConfig()
+    assert cfg.alert_popup_enabled is True
+
+
 def test_load_config_from_yaml():
     """测试从 YAML 文件加载配置"""
     yaml_content = """

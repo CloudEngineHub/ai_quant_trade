@@ -68,6 +68,19 @@ class ExcelManager:
         """清除指定区域内容"""
         sheet.range((start_row, start_col), (end_row, end_col)).clear_contents()
 
+    def highlight_row(self, sheet: xw.Sheet, row: int,
+                      start_col: int = 1, end_col: int = 20,
+                      color: tuple = (255, 200, 200)):
+        """高亮整行（默认浅红色背景）"""
+        rng = sheet.range((row, start_col), (row, end_col))
+        rng.color = color
+
+    def clear_highlight(self, sheet: xw.Sheet, start_row: int = 1,
+                        end_row: int = 200, start_col: int = 1, end_col: int = 20):
+        """清除高亮格式"""
+        rng = sheet.range((start_row, start_col), (end_row, end_col))
+        rng.color = None
+
     def close(self):
         """关闭工作簿"""
         try:

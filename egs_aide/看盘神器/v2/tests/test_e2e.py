@@ -27,6 +27,7 @@ from openpyxl import load_workbook
 
 from excel_monitor.config_loader import AppConfig, load_config
 from excel_monitor.core.data_provider import DataProvider
+from excel_monitor.core.alert_checker import AlertChecker, AlertCondition
 from excel_monitor.sheets.market_overview import MarketOverviewSheet
 from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
 from excel_monitor.sheets.news_sheet import NewsSheet
@@ -108,6 +109,19 @@ def test_e2e_template_generation():
         _assert(ws_custom["A1"].value == "代码", "定制看盘 A1 = '代码'")
         _assert(ws_custom["B1"].value == "名称", "定制看盘 B1 = '名称'")
         _assert(ws_custom["M1"].value == "刷新时间", "定制看盘 M1 = '刷新时间'")
+        # 验证预警条件列表头（N-Q 列，橙色填充）
+        _assert(ws_custom["N1"].value == "涨跌幅下限", "定制看盘 N1 = '涨跌幅下限'")
+        _assert(ws_custom["O1"].value == "涨跌幅上限", "定制看盘 O1 = '涨跌幅上限'")
+        _assert(ws_custom["P1"].value == "价格下限", "定制看盘 P1 = '价格下限'")
+        _assert(ws_custom["Q1"].value == "价格上限", "定制看盘 Q1 = '价格上限'")
+        # 验证预警列表头为橙色
+        alert_fill = ws_custom["N1"].fill
+        _assert(alert_fill.start_color.rgb in ("FFED7D31", "00ED7D31"),
+                f"预警列表头填充色 = ED7D31 (实际: {alert_fill.start_color.rgb})")
+        # 验证示例预警条件
+        _assert(ws_custom["O2"].value == 5.0, "中国平安 涨跌幅上限 = 5.0")
+        _assert(ws_custom["P2"].value == 40.0, "中国平安 价格下限 = 40.0")
+        _assert(ws_custom["Q3"].value == 2000.0, "贵州茅台 价格上限 = 2000.0")
 
         # 验证表头样式（蓝色填充）
         fill = ws_detail["A1"].fill
@@ -307,9 +321,67 @@ def test_e2e_custom_watch_full_flow():
     print("  --> 个性定制看盘 Sheet 流程通过")
 
 
+def test_e2e_alert_full_flow():
+    """E2E-7: 预警完整流程（条件加载 → 检查 → 高亮 → 弹窗消息）"""
+    _section("E2E-7: 预警完整流程")
+
+    cfg = AppConfig()
+    cfg.alert_popup_enabled = False  # 测试中禁用实际弹窗
+    mock_excel = MagicMock()
+
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    # Excel 中有预警条件
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安", "贵州茅台", "宁德时代"],
+            "名称": ["中国平安", "贵州茅台", "宁德时代"],
+            "涨跌幅下限": [None, None, -5.0],
+            "涨跌幅上限": [3.0, None, None],
+            "价格下限": [40.0, None, None],
+            "价格上限": [None, 2000.0, None],
+        }),
+        4, 6,
+    )
+
+    # 实时行情：中国平安涨5%(超涨幅上限)、茅台1850(正常)、宁德-6%(低于涨幅下限)
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台", "宁德时代"],
+        "名称": ["中国平安", "贵州茅台", "宁德时代"],
+        "最新": [45.0, 1850.0, 210.0],
+        "涨幅": [5.0, 0.8, -6.0],
+        "时间": ["10:30:00", "10:30:00", "10:30:00"],
+    })
+
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, cfg)
+    sheet.sheet = MagicMock()
+
+    # init: 加载预警条件
+    sheet.init()
+    _assert(len(sheet._alert_conditions) == 3, f"加载 3 条预警条件 (实际: {len(sheet._alert_conditions)})")
+
+    # refresh: 刷新 + 检查预警
+    sheet.refresh()
+
+    # 验证高亮被调用（中国平安 + 宁德时代 = 2 只触发）
+    _assert(mock_excel.highlight_row.call_count == 2,
+            f"高亮 2 行 (实际: {mock_excel.highlight_row.call_count})")
+
+    # 验证清除高亮被调用
+    mock_excel.clear_highlight.assert_called_once()
+
+    # 验证数据写入只清除数据列（不触碰预警条件列）
+    clear_call = mock_excel.clear_range.call_args
+    _assert(clear_call.kwargs.get("end_col") == 13,
+            f"清除范围 end_col=13 (实际: {clear_call.kwargs.get('end_col')})")
+
+    print("  --> 预警完整流程通过")
+
+
 def test_e2e_main_entry_import():
-    """E2E-7: main.py 入口可导入"""
-    _section("E2E-7: main.py 入口导入验证")
+    """E2E-8: main.py 入口可导入"""
+    _section("E2E-8: main.py 入口导入验证")
 
     base_dir = os.path.join(os.path.dirname(__file__), "..")
     base_dir = os.path.abspath(base_dir)
@@ -346,6 +418,7 @@ def run_all():
         test_e2e_detailed_quotes_full_flow,
         test_e2e_news_full_refresh,
         test_e2e_custom_watch_full_flow,
+        test_e2e_alert_full_flow,
         test_e2e_main_entry_import,
     ]
 

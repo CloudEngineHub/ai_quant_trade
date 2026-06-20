@@ -58,16 +58,32 @@ def create_template(output_path: str = None, config: AppConfig = None):
 
     # === Sheet 4: 个性定制看盘 ===
     ws4 = wb.create_sheet(cfg.sheets["custom_watch"])
-    # 写入表头
+    # 写入数据列表头
     headers = cfg.custom_watch_columns
     for col_idx, header in enumerate(headers, 1):
         cell = ws4.cell(row=1, column=col_idx, value=header)
         _style_header(cell)
+    # 写入预警条件列表头（紧挨数据列右侧，用橙色区分）
+    alert_headers = cfg.alert_columns
+    alert_start_col = len(headers) + 1
+    for i, header in enumerate(alert_headers):
+        cell = ws4.cell(row=1, column=alert_start_col + i, value=header)
+        cell.font = Font(bold=True, size=11, color="FFFFFF")
+        cell.fill = PatternFill(start_color="ED7D31", end_color="ED7D31",
+                                fill_type="solid")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        thin = Side(border_style="thin", color="CCCCCC")
+        cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
     # 示例自选股
     ws4["A2"] = "中国平安"
     ws4["B2"] = "中国平安"
+    # 示例预警条件：涨跌幅上限 5%，价格下限 40
+    ws4.cell(row=2, column=alert_start_col + 1, value=5.0)   # 涨跌幅上限
+    ws4.cell(row=2, column=alert_start_col + 2, value=40.0)  # 价格下限
     ws4["A3"] = "贵州茅台"
     ws4["B3"] = "贵州茅台"
+    # 示例预警条件：价格上限 2000
+    ws4.cell(row=3, column=alert_start_col + 3, value=2000.0)  # 价格上限
 
     # 设置列宽
     for ws in [ws1, ws2, ws3, ws4]:

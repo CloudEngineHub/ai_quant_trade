@@ -43,6 +43,14 @@ class AppConfig:
         "开盘", "昨收", "刷新时间",
     ])
 
+    # 预警条件列名（用户在 Excel 中填写阈值）
+    alert_columns: List[str] = field(default_factory=lambda: [
+        "涨跌幅下限", "涨跌幅上限", "价格下限", "价格上限",
+    ])
+
+    # 是否启用预警弹窗
+    alert_popup_enabled: bool = True
+
     # 新闻显示条数
     news_max_rows: int = 50
 
