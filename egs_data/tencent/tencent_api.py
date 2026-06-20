@@ -79,8 +79,10 @@ def get_daily(code='sh601318', count=320, fqt='qfq'):
     data = r.json().get('data', {}).get(code, {})
     # 日K线在 day 或 qfqday/hfqday 字段下
     day_data = data.get('day') or data.get('qfqday') or data.get('hfqday') or []
-    df = pd.DataFrame(day_data, columns=['日期', '开盘', '收盘', '最高',
-                                         '最低', '成交量'])
+    # 部分行可能含第7列（分红信息dict），只取前6列
+    rows = [row[:6] for row in day_data]
+    df = pd.DataFrame(rows, columns=['日期', '开盘', '收盘', '最高',
+                                     '最低', '成交量'])
     for col in ['开盘', '收盘', '最高', '最低', '成交量']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     return df
@@ -99,8 +101,10 @@ def get_minute(code='sh601318', mtype=5):
     data = r.json().get('data', {}).get(code, {})
     key = f'm{mtype}'
     minute_data = data.get(key, [])
-    df = pd.DataFrame(minute_data, columns=['时间', '开盘', '收盘',
-                                           '最高', '最低', '成交量'])
+    # 部分行可能含额外列（均价等），只取前6列
+    rows = [row[:6] for row in minute_data]
+    df = pd.DataFrame(rows, columns=['时间', '开盘', '收盘',
+                                     '最高', '最低', '成交量'])
     for col in ['开盘', '收盘', '最高', '最低', '成交量']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     return df

@@ -38,7 +38,7 @@ def demo_wbdata():
     print("=" * 60)
     print("1. 查询国家列表（前10个）")
     print("=" * 60)
-    countries = wbdata.get_country()
+    countries = wbdata.get_countries()
     for c in countries[:10]:
         print(f"  {c['id']}: {c['name']}")
 
@@ -46,13 +46,13 @@ def demo_wbdata():
     print("\n" + "=" * 60)
     print("2. 中国GDP（2010-2023）")
     print("=" * 60)
-    data = wbdata.get_data('NY.GDP.MKTP.CD', country='CHN',
-                           date=('2010', '2023'))
-    df = pd.DataFrame(data)
-    # 提取年份和数值
-    df['year'] = df['date'].apply(lambda x: x[:4])
-    df['value'] = pd.to_numeric(df['value'], errors='coerce')
-    print(df[['year', 'value']].sort_values('year'))
+    result = wbdata.get_data('NY.GDP.MKTP.CD', country='CHN',
+                            date=('2010', '2023'))
+    # get_data 返回 Result 对象，可直接转为 DataFrame
+    df = pd.DataFrame(result)
+    if 'value' in df.columns:
+        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    print(df[['date', 'value']].sort_values('date') if 'date' in df.columns else df)
 
     # 3. 多国多指标对比
     print("\n" + "=" * 60)
@@ -68,8 +68,13 @@ def demo_wbdata():
 
 
 def demo_pandas_datareader():
-    """使用 pandas_datareader 获取 World Bank 数据"""
-    import pandas_datareader.data as web
+    """使用 pandas_datareader 获取 World Bank 数据（备选方案）"""
+    try:
+        import pandas_datareader.data as web
+    except Exception as e:
+        print(f"pandas_datareader 不可用: {e}")
+        print("请使用 demo_wbdata() 或 demo_requests() 替代")
+        return
 
     print("\n" + "=" * 60)
     print("使用 pandas_datareader 获取 World Bank 数据")
@@ -90,6 +95,40 @@ def demo_pandas_datareader():
     print(gdp_multi.tail())
 
 
+def demo_requests():
+    """直接使用 requests 调用 World Bank API（无需安装额外包）"""
+    import requests
+
+    print("\n" + "=" * 60)
+    print("直接调用 World Bank API（requests）")
+    print("=" * 60)
+
+    # 1. 获取中国GDP
+    url = 'https://api.worldbank.org/v2/country/CHN/indicator/NY.GDP.MKTP.CD'
+    params = {'format': 'json', 'date': '2010:2023', 'per_page': 100}
+    r = requests.get(url, params=params)
+    data = r.json()
+    if len(data) > 1:
+        df = pd.DataFrame(data[1])
+        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+        print("中国GDP:")
+        print(df[['date', 'value']].sort_values('date'))
+
+    # 2. 多国GDP对比
+    print("\n多国GDP对比:")
+    url = 'https://api.worldbank.org/v2/country/CHN;USA;JPN/indicator/NY.GDP.MKTP.CD'
+    params = {'format': 'json', 'date': '2020:2023', 'per_page': 100}
+    r = requests.get(url, params=params)
+    data = r.json()
+    if len(data) > 1:
+        df = pd.DataFrame(data[1])
+        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+        # 整理为透视表
+        pivot = df.pivot_table(index='date', columns='country',
+                               values='value')
+        print(pivot)
+
+
 if __name__ == '__main__':
     demo_wbdata()
-    demo_pandas_datareader()
+    demo_requests()

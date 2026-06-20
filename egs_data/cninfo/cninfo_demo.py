@@ -20,6 +20,8 @@
 巨潮资讯网（CNINFO）官方披露数据接口示例
 覆盖：公告查询、年报查询、定期报告查询
 无需安装额外库，使用 requests 即可
+注意：CNINFO 的 stock 参数需要 "代码,orgId" 格式，
+      orgId 需通过搜索接口获取，本脚本已内置自动获取逻辑
 """
 
 import requests
@@ -33,6 +35,22 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Referer': 'http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice'
 }
+
+
+def get_org_id(stock_code='601318'):
+    """
+    通过搜索接口获取股票的 orgId
+    CNINFO 的公告查询接口需要 "代码,orgId" 格式
+    :param stock_code: 股票代码，如 601318
+    :return: orgId 字符串
+    """
+    search_url = 'http://www.cninfo.com.cn/new/information/topSearch/query'
+    r = requests.post(search_url, data={'keyWord': stock_code, 'maxNum': 10},
+                      headers=HEADERS)
+    results = r.json()
+    if results and len(results) > 0:
+        return results[0].get('orgId', '')
+    return ''
 
 
 def query_announcements(stock='601318', category='category_ndbg_szsh',
@@ -51,14 +69,26 @@ def query_announcements(stock='601318', category='category_ndbg_szsh',
     :param page_size: 每页数量
     :return: DataFrame
     """
+    # 自动获取 orgId
+    org_id = get_org_id(stock)
+    if not org_id:
+        print(f"未找到股票 {stock} 的 orgId")
+        return pd.DataFrame()
+
+    # 判断市场：6/9开头为沪市(shj)，其余为深市(szse)
+    is_sh = stock.startswith(('6', '9'))
+    column = 'sse' if is_sh else 'szse'
+    plate = 'sh' if is_sh else 'sz'
+
     url = 'http://www.cninfo.com.cn/new/hisAnnouncement/query'
     data = {
-        'stock': f'{stock},sh',  # 沪市用 sh，深市用 sz
+        'stock': f'{stock},{org_id}',
         'tabName': 'fulltext',
         'pageSize': page_size,
         'pageNum': page,
+        'column': column,
         'category': category,
-        'plate': 'sz;sh',
+        'plate': plate,
         'searchkey': '',
         'secid': '',
         'sortName': '',
@@ -67,7 +97,7 @@ def query_announcements(stock='601318', category='category_ndbg_szsh',
     }
     r = requests.post(url, data=data, headers=HEADERS)
     result = r.json()
-    announcements = result.get('announcements', [])
+    announcements = result.get('announcements') or []
     if not announcements:
         print("未查询到公告")
         return pd.DataFrame()
@@ -106,15 +136,25 @@ def query_all_announcements(stock='601318', start_date='2023-01-01',
     :param end_date: 结束日期 YYYY-MM-DD
     :return: DataFrame
     """
+    # 自动获取 orgId
+    org_id = get_org_id(stock)
+    if not org_id:
+        print(f"未找到股票 {stock} 的 orgId")
+        return pd.DataFrame()
+
+    is_sh = stock.startswith(('6', '9'))
+    column = 'sse' if is_sh else 'szse'
+    plate = 'sh' if is_sh else 'sz'
+
     url = 'http://www.cninfo.com.cn/new/hisAnnouncement/query'
     data = {
-        'stock': f'{stock},sh',
+        'stock': f'{stock},{org_id}',
         'tabName': 'fulltext',
         'pageSize': page_size,
         'pageNum': page,
-        'column': 'szse',
+        'column': column,
         'category': '',
-        'plate': 'sz;sh',
+        'plate': plate,
         'seDate': f'{start_date}~{end_date}',
         'searchkey': '',
         'secid': '',
@@ -124,7 +164,7 @@ def query_all_announcements(stock='601318', start_date='2023-01-01',
     }
     r = requests.post(url, data=data, headers=HEADERS)
     result = r.json()
-    announcements = result.get('announcements', [])
+    announcements = result.get('announcements') or []
     if not announcements:
         print("未查询到公告")
         return pd.DataFrame()

@@ -24,12 +24,15 @@ FRED 宏观经济数据接口示例
 """
 
 import pandas as pd
+import requests
+from io import StringIO
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 120)
 
+
 # ============================================================
-# 方式一：使用 fredapi 包
+# 方式一：使用 fredapi 包（需 API Key）
 # ============================================================
 def demo_fredapi():
     """使用 fredapi 包获取数据"""
@@ -85,12 +88,46 @@ def demo_fredapi():
 
 
 # ============================================================
-# 方式二：使用 pandas_datareader（无需 fredapi 包）
+# 方式二：直接 CSV 下载（无需 API Key 和额外包）
+# ============================================================
+def demo_csv_download():
+    """直接从 FRED 网站下载 CSV 数据（无需 API Key）"""
+    print("=" * 60)
+    print("直接从 FRED 下载 CSV 数据（无需 API Key）")
+    print("=" * 60)
+
+    indicators = {
+        'GDP': '美国GDP（季度）',
+        'CPIAUCSL': 'CPI消费者物价指数（月度）',
+        'UNRATE': '失业率（月度）',
+        'FEDFUNDS': '联邦基金利率（月度）',
+        'GS10': '10年期国债收益率（月度）',
+    }
+
+    for series_id, desc in indicators.items():
+        url = f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
+        r = requests.get(url)
+        if r.status_code == 200:
+            df = pd.read_csv(StringIO(r.text))
+            # 列名通常为 'date' 和 series_id
+            print(f"\n{desc} ({series_id}):")
+            print(df.tail(5))
+        else:
+            print(f"\n{desc} ({series_id}): 下载失败 HTTP {r.status_code}")
+
+
+# ============================================================
+# 方式三：使用 pandas_datareader（备选方案）
 # ============================================================
 def demo_pandas_datareader():
     """使用 pandas_datareader 获取 FRED 数据"""
-    import pandas_datareader.data as web
-    import datetime
+    try:
+        import pandas_datareader.data as web
+        import datetime
+    except Exception as e:
+        print(f"pandas_datareader 不可用: {e}")
+        print("请使用 demo_fredapi() 或 demo_csv_download() 替代")
+        return
 
     print("=" * 60)
     print("使用 pandas_datareader 获取 FRED 数据")
@@ -111,8 +148,11 @@ def demo_pandas_datareader():
 
 
 if __name__ == '__main__':
-    # 方式一需要 API Key，方式二不需要
-    # 请根据需要取消注释
-
+    # 方式一需要 API Key
     # demo_fredapi()
-    demo_pandas_datareader()
+
+    # 方式二无需 API Key，直接下载 CSV
+    demo_csv_download()
+
+    # 方式三为备选方案（部分 Python 版本可能不兼容）
+    # demo_pandas_datareader()

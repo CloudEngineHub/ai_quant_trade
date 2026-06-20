@@ -89,7 +89,7 @@ def demo_north_money():
     print("\n" + "=" * 60)
     print("6. 北向资金每日净流入")
     print("=" * 60)
-    df = ak.stock_hsgt_north_net_flow_in_em(symbol="北上")
+    df = ak.stock_hsgt_hist_em(symbol="北向资金")
     print(df.tail())
     # 字段：日期、当日净流入、当日余额
 
