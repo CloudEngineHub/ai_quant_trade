@@ -2,4 +2,5 @@ xlwings
 qstock
 pandas
 openpyxl
+pyyaml
 pytest

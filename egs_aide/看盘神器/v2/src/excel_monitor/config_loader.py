@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
-"""盯盘工具 V2 配置模块"""
-from dataclasses import dataclass, field
-from typing import List, Dict
+"""配置加载器：从 YAML 读取配置，返回 AppConfig 对象"""
+import os
+from dataclasses import dataclass, field, asdict
+from typing import List, Dict, Optional
 
-
-@dataclass
-class SheetConfig:
-    """Sheet 名称映射"""
-    market_overview: str = "大盘"
-    detailed_quotes: str = "详细行情"
-    news: str = "新闻"
-    custom_watch: str = "个性定制看盘"
+import yaml
 
 
 @dataclass
 class AppConfig:
-    """全局配置"""
+    """全局配置（带默认值，可被 YAML 覆盖）"""
     # Excel 模板文件名
     excel_template: str = "看盘模板.xlsx"
 
@@ -51,3 +45,24 @@ class AppConfig:
 
     # 新闻显示条数
     news_max_rows: int = 50
+
+
+def load_config(yaml_path: Optional[str] = None) -> AppConfig:
+    """从 YAML 文件加载配置，合并到默认值上
+
+    Args:
+        yaml_path: YAML 配置文件路径。为 None 时返回默认配置。
+
+    Returns:
+        AppConfig 对象
+    """
+    if yaml_path is None or not os.path.exists(yaml_path):
+        return AppConfig()
+
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    # 用默认值初始化，再用 yaml 数据覆盖
+    defaults = asdict(AppConfig())
+    defaults.update(data)
+    return AppConfig(**defaults)

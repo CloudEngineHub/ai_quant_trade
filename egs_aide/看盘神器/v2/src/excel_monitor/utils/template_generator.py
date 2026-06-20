@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """生成 Excel 看盘模板（使用 openpyxl）
 
-运行: python create_template.py
-生成: 看盘模板.xlsx（含4个 Sheet：大盘、详细行情、新闻、个性定制看盘）
+运行: python -m excel_monitor.utils.template_generator
+或通过 main.py 自动调用
 """
 import os
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from config import AppConfig
+from excel_monitor.config_loader import AppConfig
 
 
 def _style_header(cell):
@@ -21,9 +21,14 @@ def _style_header(cell):
     cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
 
-def create_template(output_path: str = None):
-    """生成 Excel 模板"""
-    cfg = AppConfig()
+def create_template(output_path: str = None, config: AppConfig = None):
+    """生成 Excel 模板
+
+    Args:
+        output_path: 输出路径，默认使用 config.excel_template
+        config: 配置对象，默认使用 AppConfig()
+    """
+    cfg = config or AppConfig()
     path = output_path or os.path.join(os.getcwd(), cfg.excel_template)
 
     wb = Workbook()

@@ -2,7 +2,7 @@
 """数据提供者：封装 qstock 数据获取，统一异常处理"""
 import logging
 import traceback
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 import pandas as pd
 

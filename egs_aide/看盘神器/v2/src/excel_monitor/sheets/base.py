@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import xlwings as xw
 
-from data_provider import DataProvider
-from excel_manager import ExcelManager
+from excel_monitor.core.data_provider import DataProvider
+from excel_monitor.core.excel_manager import ExcelManager
 
 
 class BaseSheet(ABC):

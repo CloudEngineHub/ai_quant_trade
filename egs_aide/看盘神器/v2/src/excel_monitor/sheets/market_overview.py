@@ -2,8 +2,8 @@
 """大盘 Sheet：指数行情 + 行业板块 + 概念板块 + 涨停板"""
 import logging
 
-from sheets.base import BaseSheet
-from config import AppConfig
+from excel_monitor.sheets.base import BaseSheet
+from excel_monitor.config_loader import AppConfig
 
 
 class MarketOverviewSheet(BaseSheet):

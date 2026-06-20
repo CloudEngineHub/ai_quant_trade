@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+"""DataProvider 纯逻辑方法测试"""
 import pandas as pd
-from data_provider import DataProvider
+
+from excel_monitor.core.data_provider import DataProvider
 
 
 def test_clean_stock_code_removes_postfix():

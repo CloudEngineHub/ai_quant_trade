@@ -4,8 +4,8 @@ import logging
 
 import pandas as pd
 
-from sheets.base import BaseSheet
-from config import AppConfig
+from excel_monitor.sheets.base import BaseSheet
+from excel_monitor.config_loader import AppConfig
 
 
 class DetailedQuotesSheet(BaseSheet):

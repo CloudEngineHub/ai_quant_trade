@@ -1,7 +1,13 @@
+# -*- coding: utf-8 -*-
+"""Sheet Handler 逻辑测试（mock 数据源）"""
 import pandas as pd
-from unittest.mock import MagicMock, patch
-from config import AppConfig
-from sheets.market_overview import MarketOverviewSheet
+from unittest.mock import MagicMock
+
+from excel_monitor.config_loader import AppConfig
+from excel_monitor.sheets.market_overview import MarketOverviewSheet
+from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
+from excel_monitor.sheets.news_sheet import NewsSheet
+from excel_monitor.sheets.custom_watch import CustomWatchSheet
 
 
 def test_market_overview_refresh_with_mock():
@@ -9,7 +15,6 @@ def test_market_overview_refresh_with_mock():
     mock_excel = MagicMock()
     mock_data = MagicMock()
 
-    # mock 返回数据
     mock_data.get_index_realtime.return_value = pd.DataFrame({
         "名称": ["上证指数", "深证成指"],
         "最新": [3200.0, 10500.0],
@@ -24,15 +29,10 @@ def test_market_overview_refresh_with_mock():
     sheet = MarketOverviewSheet("大盘", mock_excel, mock_data)
     sheet.sheet = MagicMock()
 
-    # 不应抛异常
     sheet.refresh()
 
-    # 验证数据源被调用
     mock_data.get_index_realtime.assert_called_once()
     mock_data.get_industry_boards.assert_called_once()
-
-
-from sheets.detailed_quotes import DetailedQuotesSheet
 
 
 def test_detailed_quotes_refresh_with_mock():
@@ -40,7 +40,6 @@ def test_detailed_quotes_refresh_with_mock():
     mock_excel = MagicMock()
     mock_data = MagicMock()
 
-    # mock Sheet 已有自选股数据
     mock_excel.sheet_to_df.return_value = (
         pd.DataFrame({
             "代码": ["000001", "600000"],
@@ -67,9 +66,6 @@ def test_detailed_quotes_refresh_with_mock():
     mock_data.get_stock_realtime.assert_called_once()
 
 
-from sheets.news_sheet import NewsSheet
-
-
 def test_news_sheet_refresh_with_mock():
     """测试新闻 Sheet 刷新逻辑"""
     mock_excel = MagicMock()
@@ -93,15 +89,11 @@ def test_news_sheet_refresh_with_mock():
     mock_data.get_news_js.assert_called_once()
 
 
-from sheets.custom_watch import CustomWatchSheet
-
-
 def test_custom_watch_refresh_with_mock():
     """测试个性定制看盘 Sheet 刷新逻辑"""
     mock_excel = MagicMock()
     mock_data = MagicMock()
 
-    # mock Sheet 中已有自选股
     mock_excel.sheet_to_df.return_value = (
         pd.DataFrame({
             "代码": ["中国平安", "贵州茅台"],

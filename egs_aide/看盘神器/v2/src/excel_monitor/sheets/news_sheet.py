@@ -2,8 +2,8 @@
 """新闻 Sheet：财联社电报 + 市场快讯"""
 import logging
 
-from sheets.base import BaseSheet
-from config import AppConfig
+from excel_monitor.sheets.base import BaseSheet
+from excel_monitor.config_loader import AppConfig
 
 
 class NewsSheet(BaseSheet):
