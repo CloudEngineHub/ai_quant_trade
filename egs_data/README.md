@@ -22,6 +22,7 @@
     - efinance (基于东方财富的免费数据获取库)
     - Qlib (微软开源AI量化框架，内置数据下载)
     - CCXT (加密货币交易所统一接口库)
+    - CryptoCompare (加密货币行情聚合，需免费API Key)
     - FRED (美联储宏观经济数据)
     - World Bank API (全球经济数据)
     - 巨潮资讯网 (官方信息披露平台)
@@ -96,7 +97,28 @@
   * 公开行情数据无需API Key
   * [示例代码](ccxt/ccxt_demo.py)
 
-## 2.4 海外宏观数据
+- CryptoCompare
+  * （****）推荐使用
+  * 加密货币行情聚合，多交易所加权价格、市值排名、历史数据
+  * 与CCXT互补：CCXT直连单交易所，CryptoCompare聚合全市场
+  * 免费层需注册 API Key
+  * [示例代码](cryptocompare/cryptocompare_demo.py)
+
+## 2.4 期货数据
+- AKShare 期货接口（新浪财经）
+  * （*****）推荐使用
+  * 覆盖主力连续日K线、单合约历史K线、全市场主力合约列表
+  * 无需 API Key
+  * [示例代码](futures/futures_demo.py)
+
+## 2.5 基金数据
+- AKShare + efinance 基金接口
+  * （*****）推荐使用
+  * 覆盖开放式基金净值、基金业绩排行、基金持仓、ETF行情
+  * 无需 API Key
+  * [示例代码](fund/fund_demo.py)
+
+## 2.6 海外宏观数据
 - FRED (Federal Reserve Economic Data)
   * （*****）推荐使用
   * 美联储免费宏观经济数据库，数据权威
@@ -109,14 +131,14 @@
   * 无需API Key
   * [示例代码](world_bank/world_bank_demo.py)
 
-## 2.5 官方披露数据
+## 2.7 官方披露数据
 - 巨潮资讯网 (CNINFO)
   * （****）推荐使用
   * 证监会指定法定信息披露网站
   * 提供上市公司公告、年报、季报等
   * [示例代码](cninfo/cninfo_demo.py)
 
-## 2.6 财经新闻数据
+## 2.8 财经新闻数据
 - AKShare 新闻接口
   * （*****）推荐使用
   * 覆盖个股新闻、财经快讯、新闻联播、微博舆情、新闻情绪指数
@@ -148,7 +170,7 @@
   * 免费层100请求/天，需注册 API Key
   * [示例代码](news_api/newsapi_demo.py)
 
-## 2.7 舆情数据
+## 2.9 舆情数据
 - 雪球网
   * （****）推荐使用
   * 国内领先投资者社区，帖子内容、阅读量、评论数
@@ -161,7 +183,7 @@
   * 无需 API Key
   * [示例代码](eastmoney/eastmoney_news_guba.py)
 
-## 2.8 部分免费python库
+## 2.10 部分免费python库
 &emsp;&emsp;该部分数据质量相对较好，但不完全免费，存在部分限制。
 
 - 国内量化在线平台
@@ -186,7 +208,7 @@
 ## 4.1 免费
 * Baostock - 免注册证券数据
 * qstock - 基于东方财富和同花顺的免费接口
-* AKShare - 最全免费金融数据接口库（含新闻/舆情接口）
+* AKShare - 最全免费金融数据接口库（含新闻/舆情/期货/基金接口）
 * efinance - 基于东方财富的免费数据获取库
 * Qlib - 微软开源AI量化框架
 * CCXT - 加密货币交易所统一接口库
@@ -199,6 +221,7 @@
 * 历史数据 - 文档 | BigQuant - 免费
 
 ## 4.2 免费（需注册 API Key）
+* CryptoCompare - 加密货币行情聚合（市值排名/历史数据）
 * Finnhub - 国际财经新闻+情绪分析（60请求/分钟）
 * NewsAPI.org - 国际新闻聚合API（100请求/天）
 * 雪球网 - 投资者社区舆情数据（需Cookie）
