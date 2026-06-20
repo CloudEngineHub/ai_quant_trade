@@ -55,6 +55,16 @@ class AppConfig:
     # 配置重载间隔（每 N 次 refresh 重新从 Excel 读取股票代码和预警条件）
     config_reload_interval: int = 5
 
+    # K 线图配置
+    kline_count: int = 60           # K 线数量
+    kline_freq: str = "d"           # 周期: d=日线 w=周线 m=月线
+    kline_chart_type: str = "candle"  # 图表类型: candle=蜡烛图 ohlc=OHLC图
+    kline_mav: tuple = (5, 10, 20)  # 均线周期
+    kline_image_width: int = 600    # 图片宽度（像素）
+    kline_image_height: int = 350   # 图片高度（像素）
+    kline_display_row: int = 25     # K 线图显示起始行
+    kline_display_col: int = 1      # K 线图显示起始列
+
     # 新闻显示条数
     news_max_rows: int = 50
 

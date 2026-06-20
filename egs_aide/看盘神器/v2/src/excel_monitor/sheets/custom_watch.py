@@ -17,6 +17,7 @@ from excel_monitor.config_loader import AppConfig
 from excel_monitor.core.alert_checker import (
     AlertCondition, AlertChecker
 )
+from excel_monitor.utils.kline_chart import KLineChart
 
 # qstock 返回的列名可能不统一，这里做兼容映射
 _PRICE_COLS = ["最新", "最新价", "当前价", "现价"]
@@ -36,10 +37,145 @@ class CustomWatchSheet(BaseSheet):
         self._data_col_count = len(self.config.custom_watch_columns)
         # 刷新计数器（用于定时重载配置）
         self._refresh_count = 0
+        # K 线图绘制器
+        self._kline_chart = KLineChart()
+        # K 线按钮行号（B21 单元格存储用户选择的行号）
+        self._kline_row_cell = (21, 2)  # (row, col) = B21
 
     def init(self):
         """从 Excel 读取自选股代码和预警条件（首次加载）"""
         self._reload_from_excel()
+        # 添加"画K线"按钮
+        self._add_kline_button()
+
+    def _add_kline_button(self):
+        """在 Excel 中添加'画K线'按钮"""
+        if self.sheet is None:
+            return
+        # 清除 D21 占位文字
+        try:
+            self.sheet.cells(21, 4).value = None
+        except Exception:
+            pass
+        # 添加按钮（位于 D21 位置）
+        self.excel_mgr.add_button(
+            self.sheet, row=21, col=4,
+            text="画K线", macro="DrawKLineMacro",
+            width=80, height=30
+        )
+        # 尝试注入 VBA 宏
+        self._setup_vba_macro()
+
+    def _setup_vba_macro(self):
+        """注入 VBA 宏，使按钮点击时写入触发信号
+
+        VBA 宏点击后向 D21 写入 "DRAW"，由 refresh() 轮询检测。
+        若 VBA 注入失败（权限/格式限制），降级为手动输入模式。
+        """
+        vba_code = (
+            'Sub DrawKLineMacro()\n'
+            '    Range("D21").Value = "DRAW"\n'
+            'End Sub'
+        )
+        try:
+            wb = self.sheet.book
+            vb_project = wb.api.VBProject
+            module_name = "KLineModule"
+            # 移除旧模块（如果存在）
+            try:
+                old = vb_project.VBComponents.Item(module_name)
+                vb_project.VBComponents.Remove(old)
+            except Exception:
+                pass
+            # 添加新模块（1 = vbext_ct_StdModule）
+            vb_module = vb_project.VBComponents.Add(1)
+            vb_module.Name = module_name
+            vb_module.CodeModule.AddFromString(vba_code)
+            self._logger.info("VBA 宏注入成功，点击按钮即可画K线")
+        except Exception as e:
+            self._logger.warning(f"VBA 宏注入失败: {e}")
+            self._logger.info(
+                "降级为轮询模式：在 D21 单元格输入 DRAW，"
+                "下次刷新时自动画K线"
+            )
+
+    def _check_kline_trigger(self):
+        """检查是否有画K线触发信号（轮询模式）"""
+        if self.sheet is None:
+            return
+        try:
+            trigger = self.excel_mgr.get_cell_value(self.sheet, 21, 4)
+        except Exception:
+            return
+        if trigger and str(trigger).strip().upper() == "DRAW":
+            # 清除触发信号
+            try:
+                self.sheet.cells(21, 4).value = None
+            except Exception:
+                pass
+            # 触发画K线
+            self.draw_kline()
+
+    def draw_kline(self):
+        """画K线图：读取选中行号 → 获取股票代码 → 获取K线数据 → 绘图 → 插入图片"""
+        if self.sheet is None:
+            self._logger.warning("Sheet 未初始化，无法画K线")
+            return
+
+        # 1. 读取 B21 单元格的行号
+        row_num = self.excel_mgr.get_cell_value(self.sheet, 21, 2)
+        if row_num is None:
+            self._logger.warning("请在 B21 输入要画K线的股票行号")
+            return
+        try:
+            row_num = int(row_num)
+        except (ValueError, TypeError):
+            self._logger.warning(f"B21 行号无效: {row_num}，请输入数字")
+            return
+        if row_num < 2:
+            self._logger.warning(f"行号 {row_num} 无效，应 >= 2")
+            return
+
+        # 2. 获取该行的股票代码（A 列）
+        code = self.excel_mgr.get_cell_value(self.sheet, row_num, 1)
+        if not code:
+            self._logger.warning(f"第 {row_num} 行无股票代码")
+            return
+        code = str(code).strip()
+
+        # 3. 获取股票名称（B 列）
+        name = self.excel_mgr.get_cell_value(self.sheet, row_num, 2)
+        name = str(name).strip() if name else code
+
+        self._logger.info(f"开始画K线: 行{row_num} 代码={code} 名称={name}")
+
+        # 4. 获取 K 线数据
+        df = self.data.get_kline_data(
+            code, count=self.config.kline_count, freq=self.config.kline_freq
+        )
+        if df.empty:
+            self._logger.warning(f"获取K线数据失败: {code}")
+            return
+
+        # 5. 绘制 K 线图
+        image_path = self._kline_chart.draw(
+            df, stock_name=name,
+            chart_type=self.config.kline_chart_type,
+            mav=self.config.kline_mav
+        )
+        if not image_path:
+            self._logger.error("K线图绘制失败")
+            return
+
+        # 6. 插入图片到 Excel
+        self.excel_mgr.insert_image(
+            self.sheet, image_path,
+            row=self.config.kline_display_row,
+            col=self.config.kline_display_col,
+            width=self.config.kline_image_width,
+            height=self.config.kline_image_height
+        )
+        self._logger.info(f"K线图已插入: {code} ({name})")
 
     def _reload_from_excel(self):
         """从 Excel 重新读取自选股代码和预警条件"""
@@ -125,6 +261,9 @@ class CustomWatchSheet(BaseSheet):
     def refresh(self):
         """刷新定制看盘数据 + 检查预警"""
         self._logger.info("刷新个性定制看盘...")
+
+        # 检查画K线触发信号（轮询模式）
+        self._check_kline_trigger()
 
         # 每隔 N 次刷新，重新从 Excel 读取股票代码和预警条件（支持实时修改）
         self._refresh_count += 1

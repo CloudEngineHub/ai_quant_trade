@@ -152,3 +152,42 @@ class DataProvider:
             self._logger.error(f"获取个股新闻失败: {e}")
             traceback.print_exc()
             return pd.DataFrame()
+
+    def get_kline_data(self, code: str, count: int = 60,
+                       freq: str = "d") -> pd.DataFrame:
+        """获取 K 线历史数据
+
+        Args:
+            code: 股票代码或名称
+            count: K 线数量
+            freq: 周期 'd'=日线, 'w'=周线, 'm'=月线
+
+        Returns:
+            DataFrame，包含 Open/High/Low/Close/Volume 列，索引为日期
+        """
+        try:
+            qs = _get_qstock()
+            df = qs.get_data(code, count=count, freq=freq)
+            if df is None or df.empty:
+                return pd.DataFrame()
+
+            # 统一列名为 mplfinance 需要的格式
+            col_map = {
+                "开盘": "Open", "最高": "High", "最低": "Low",
+                "收盘": "Close", "成交量": "Volume",
+                "open": "Open", "high": "High", "low": "Low",
+                "close": "Close", "volume": "Volume",
+            }
+            df = df.rename(columns={k: v for k, v in col_map.items()
+                                    if k in df.columns})
+
+            # 确保索引是日期类型
+            if not isinstance(df.index, pd.DatetimeIndex):
+                # 尝试转换索引
+                df.index = pd.to_datetime(df.index)
+
+            return df
+        except Exception as e:
+            self._logger.error(f"获取K线数据失败: {e}")
+            traceback.print_exc()
+            return pd.DataFrame()

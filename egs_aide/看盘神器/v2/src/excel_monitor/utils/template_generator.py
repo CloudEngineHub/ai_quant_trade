@@ -85,6 +85,20 @@ def create_template(output_path: str = None, config: AppConfig = None):
     # 示例预警条件：价格上限 2000
     ws4.cell(row=3, column=alert_start_col + 3, value=2000.0)  # 价格上限
 
+    # K 线图操作区域（第 20 行开始）
+    ws4["A20"] = "=== K 线图操作区 ==="
+    ws4["A20"].font = Font(bold=True, size=12, color="4472C4")
+    ws4["A21"] = "选中股票行号:"
+    ws4["B21"] = 2  # 默认第 2 行（第一只股票）
+    ws4["A22"] = "提示: 修改 B21 为要画K线的股票行号，然后点击按钮"
+    ws4["A22"].font = Font(size=9, color="888888")
+    # 按钮占位（实际按钮由 xlwings 在运行时添加）
+    ws4["D21"] = "[画K线按钮在程序启动后自动出现]"
+    ws4["D21"].font = Font(size=9, color="888888", italic=True)
+    # K 线图显示区域标题
+    ws4["A25"] = "K 线图将显示在此区域下方 ↓"
+    ws4["A25"].font = Font(size=10, color="888888")
+
     # 设置列宽
     for ws in [ws1, ws2, ws3, ws4]:
         for col in ws.columns:

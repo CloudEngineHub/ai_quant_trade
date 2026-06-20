@@ -413,9 +413,115 @@ def test_e2e_main_entry_import():
     from excel_monitor.sheets.news_sheet import NewsSheet
     from excel_monitor.sheets.custom_watch import CustomWatchSheet
     from excel_monitor.utils.template_generator import create_template
+    from excel_monitor.utils.kline_chart import KLineChart
 
     _assert(True, "所有模块导入成功")
     print("  --> 入口导入验证通过")
+
+
+def test_e2e_kline_chart_module():
+    """E2E-9: K线图绘制模块验证"""
+    _section("E2E-9: K线图绘制模块验证")
+
+    from excel_monitor.utils.kline_chart import KLineChart
+
+    chart = KLineChart()
+
+    # 验证数据校验方法
+    valid_df = pd.DataFrame({
+        "Open": [10.0, 11.0], "High": [11.0, 12.0],
+        "Low": [9.5, 10.5], "Close": [10.5, 11.5],
+    }, index=pd.date_range("2024-01-01", periods=2))
+    _assert(KLineChart.validate_data(valid_df), "有效数据通过校验")
+
+    invalid_df = pd.DataFrame({"A": [1], "B": [2]})
+    _assert(not KLineChart.validate_data(invalid_df), "无效数据被拒绝")
+
+    # 验证空数据返回空字符串
+    _assert(chart.draw(pd.DataFrame()) == "", "空数据返回空字符串")
+
+    print("  --> K线图绘制模块验证通过")
+
+
+def test_e2e_kline_full_flow():
+    """E2E-10: K线完整流程（按钮添加 → 触发 → 画图 → 插入图片）"""
+    _section("E2E-10: K线完整流程")
+
+    cfg = AppConfig()
+    cfg.alert_popup_enabled = False
+    mock_excel = MagicMock()
+
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    # Excel 中有自选股
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安", "贵州茅台"],
+            "名称": ["中国平安", "贵州茅台"],
+        }),
+        3, 2,
+    )
+
+    # 实时行情
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台"],
+        "名称": ["中国平安", "贵州茅台"],
+        "最新": [45.0, 1800.0],
+        "涨幅": [1.5, 0.8],
+        "时间": ["10:30:00", "10:30:00"],
+    })
+
+    # K 线历史数据
+    kline_df = pd.DataFrame({
+        "Open": [44.0, 44.5, 45.0, 44.8, 45.2],
+        "High": [45.0, 45.5, 46.0, 45.5, 46.0],
+        "Low": [43.5, 44.0, 44.5, 44.2, 44.8],
+        "Close": [44.5, 45.0, 45.5, 45.0, 45.8],
+        "Volume": [100000, 120000, 90000, 110000, 130000],
+    }, index=pd.date_range("2024-01-01", periods=5))
+    mock_data.get_kline_data.return_value = kline_df
+
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, cfg)
+    sheet.sheet = MagicMock()
+
+    # mock KLineChart（避免实际绘图）
+    sheet._kline_chart = MagicMock()
+    sheet._kline_chart.draw.return_value = "/tmp/kline_e2e.png"
+
+    # 1. init: 验证按钮被添加
+    sheet.init()
+    _assert(mock_excel.add_button.call_count == 1, "画K线按钮被添加")
+    btn_args = mock_excel.add_button.call_args
+    _assert(btn_args[1]["text"] == "画K线", "按钮文字 = 画K线")
+
+    # 2. 模拟触发：D21=DRAW, B21=2(行号), A2=中国平安, B2=中国平安
+    mock_excel.get_cell_value.side_effect = [
+        "DRAW",       # D21 trigger
+        2,            # B21 row number
+        "中国平安",    # A2 code
+        "中国平安",    # B2 name
+    ]
+
+    # 3. refresh: 应检测到触发并画K线
+    sheet.refresh()
+
+    _assert(mock_data.get_kline_data.call_count == 1, "K线数据被获取")
+    _assert(sheet._kline_chart.draw.call_count == 1, "K线图被绘制")
+    _assert(mock_excel.insert_image.call_count == 1, "图片被插入")
+
+    # 验证获取K线数据时传入了正确的参数
+    kline_call = mock_data.get_kline_data.call_args
+    # code 是第一个位置参数
+    kline_code = kline_call[0][0] if kline_call[0] else kline_call[1].get("code")
+    _assert(kline_code == "中国平安", "K线数据获取代码 = 中国平安")
+
+    # 验证插入图片时使用了配置参数
+    img_call = mock_excel.insert_image.call_args
+    _assert(img_call[1]["row"] == cfg.kline_display_row, "图片行位置正确")
+    _assert(img_call[1]["width"] == cfg.kline_image_width, "图片宽度正确")
+
+    print("  --> K线完整流程通过")
 
 
 # ===== 主入口 =====
@@ -434,6 +540,8 @@ def run_all():
         test_e2e_custom_watch_full_flow,
         test_e2e_alert_full_flow,
         test_e2e_main_entry_import,
+        test_e2e_kline_chart_module,
+        test_e2e_kline_full_flow,
     ]
 
     passed = 0

@@ -296,3 +296,174 @@ def test_custom_watch_reload_after_n_refreshes():
     sheet.refresh()
     assert len(sheet._stock_codes) == 3
     assert "宁德时代" in sheet._stock_codes
+
+
+def test_custom_watch_kline_button_added():
+    """测试 init 时画K线按钮被添加"""
+    mock_excel = MagicMock()
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安"],
+            "名称": ["中国平安"],
+        }),
+        2, 2,
+    )
+
+    config = AppConfig()
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, config)
+    sheet.sheet = MagicMock()
+
+    sheet.init()
+
+    # 验证 add_button 被调用
+    mock_excel.add_button.assert_called_once()
+    call_kwargs = mock_excel.add_button.call_args
+    assert call_kwargs[1]["text"] == "画K线"
+    assert call_kwargs[1]["macro"] == "DrawKLineMacro"
+
+
+def test_custom_watch_kline_trigger_via_polling():
+    """测试轮询模式：D21 含 DRAW 时触发画K线"""
+    mock_excel = MagicMock()
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安", "贵州茅台"],
+            "名称": ["中国平安", "贵州茅台"],
+        }),
+        3, 2,
+    )
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安", "贵州茅台"],
+        "名称": ["中国平安", "贵州茅台"],
+        "最新": [45.0, 1800.0],
+        "涨幅": [1.5, 0.8],
+        "时间": ["10:30:00", "10:30:00"],
+    })
+
+    # 模拟 K 线数据
+    kline_df = pd.DataFrame({
+        "Open": [44.0, 44.5, 45.0],
+        "High": [45.0, 45.5, 46.0],
+        "Low": [43.5, 44.0, 44.5],
+        "Close": [44.5, 45.0, 45.5],
+        "Volume": [100000, 120000, 90000],
+    }, index=pd.date_range("2024-01-01", periods=3))
+    mock_data.get_kline_data.return_value = kline_df
+
+    # mock KLineChart.draw 返回图片路径
+    config = AppConfig()
+    config.alert_popup_enabled = False
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, config)
+    sheet.sheet = MagicMock()
+    sheet._kline_chart = MagicMock()
+    sheet._kline_chart.draw.return_value = "/tmp/kline_test.png"
+
+    # init
+    sheet.init()
+
+    # 模拟用户在 B21 输入行号 2，D21 输入 DRAW
+    # get_cell_value: 第一次调用(21,4)=trigger, 第二次(21,2)=row_num,
+    # 第三次(row_num,1)=code, 第四次(row_num,2)=name
+    mock_excel.get_cell_value.side_effect = [
+        "DRAW",     # D21 trigger
+        2,          # B21 row number
+        "中国平安",  # A2 code
+        "中国平安",  # B2 name
+    ]
+
+    # refresh 应检测到 trigger 并画K线
+    sheet.refresh()
+
+    # 验证 K 线数据被获取
+    mock_data.get_kline_data.assert_called_once()
+    # 验证图片被插入
+    mock_excel.insert_image.assert_called_once()
+    # 验证 draw 被调用
+    sheet._kline_chart.draw.assert_called_once()
+
+
+def test_custom_watch_kline_invalid_row():
+    """测试画K线时行号无效的情况"""
+    mock_excel = MagicMock()
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安"],
+            "名称": ["中国平安"],
+        }),
+        2, 2,
+    )
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安"],
+        "名称": ["中国平安"],
+        "最新": [45.0],
+        "涨幅": [1.5],
+        "时间": ["10:30:00"],
+    })
+
+    config = AppConfig()
+    config.alert_popup_enabled = False
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, config)
+    sheet.sheet = MagicMock()
+
+    sheet.init()
+
+    # B21 = "abc"（无效行号）
+    mock_excel.get_cell_value.side_effect = [
+        "DRAW",   # D21 trigger
+        "abc",    # B21 invalid row
+    ]
+
+    # 不应抛异常，只是 warning
+    sheet.refresh()
+
+    # K 线数据不应被获取
+    mock_data.get_kline_data.assert_not_called()
+    # 图片不应被插入
+    mock_excel.insert_image.assert_not_called()
+
+
+def test_custom_watch_kline_no_trigger():
+    """测试无触发信号时不画K线"""
+    mock_excel = MagicMock()
+    real_dp = DataProvider()
+    mock_data = MagicMock(wraps=real_dp)
+
+    mock_excel.sheet_to_df.return_value = (
+        pd.DataFrame({
+            "代码": ["中国平安"],
+            "名称": ["中国平安"],
+        }),
+        2, 2,
+    )
+    mock_data.get_stock_realtime.return_value = pd.DataFrame({
+        "代码": ["中国平安"],
+        "名称": ["中国平安"],
+        "最新": [45.0],
+        "涨幅": [1.5],
+        "时间": ["10:30:00"],
+    })
+
+    config = AppConfig()
+    config.alert_popup_enabled = False
+    sheet = CustomWatchSheet("个性定制看盘", mock_excel, mock_data, config)
+    sheet.sheet = MagicMock()
+
+    sheet.init()
+
+    # D21 = None（无触发）
+    mock_excel.get_cell_value.return_value = None
+
+    sheet.refresh()
+
+    # K 线数据不应被获取
+    mock_data.get_kline_data.assert_not_called()
+    mock_excel.insert_image.assert_not_called()

@@ -81,6 +81,81 @@ class ExcelManager:
         rng = sheet.range((start_row, start_col), (end_row, end_col))
         rng.color = None
 
+    def add_button(self, sheet: xw.Sheet, row: int, col: int,
+                   text: str, macro: str, width: int = 100, height: int = 30):
+        """在 Sheet 中添加按钮，绑定宏
+
+        Args:
+            sheet: 目标 Sheet
+            row, col: 按钮左上角位置（行、列，从1开始）
+            text: 按钮显示文字
+            macro: 绑定的宏名称（VBA 函数名）
+            width: 按钮宽度（像素）
+            height: 按钮高度（像素）
+        """
+        try:
+            left = sheet.cells(row, col).left
+            top = sheet.cells(row, col).top
+            button = sheet.shapes.add_button(
+                left=left, top=top, width=width, height=height
+            )
+            button.text = text
+            button.on_action = macro
+            self._logger.info(f"按钮已添加: {text} -> {macro}")
+            return button
+        except Exception as e:
+            self._logger.error(f"添加按钮失败: {e}")
+            return None
+
+    def insert_image(self, sheet: xw.Sheet, image_path: str,
+                     row: int = 1, col: int = 1,
+                     width: int = 600, height: int = 350):
+        """在 Sheet 中插入图片
+
+        Args:
+            sheet: 目标 Sheet
+            image_path: 图片文件路径
+            row, col: 插入位置（行、列，从1开始）
+            width: 图片宽度（像素）
+            height: 图片高度（像素）
+        """
+        try:
+            # 先清除该位置已有的图片（避免叠加）
+            self.clear_images_in_range(sheet, row, col, row + 20, col + 10)
+
+            anchor = sheet.cells(row, col)
+            pic = sheet.pictures.add(
+                image_path, left=anchor.left, top=anchor.top,
+                width=width, height=height
+            )
+            self._logger.info(f"图片已插入: {image_path} -> 行{row}列{col}")
+            return pic
+        except Exception as e:
+            self._logger.error(f"插入图片失败: {e}")
+            return None
+
+    def clear_images_in_range(self, sheet: xw.Sheet,
+                              start_row: int, start_col: int,
+                              end_row: int, end_col: int):
+        """清除指定区域内的图片"""
+        try:
+            left = sheet.cells(start_row, start_col).left
+            top = sheet.cells(start_row, start_col).top
+            right = sheet.cells(end_row, end_col).left
+            bottom = sheet.cells(end_row, end_col).top
+
+            for pic in list(sheet.pictures):
+                if (pic.left >= left and pic.top >= top and
+                        pic.left < right and pic.top < bottom):
+                    pic.delete()
+                    self._logger.debug(f"已删除图片: {pic.name}")
+        except Exception as e:
+            self._logger.debug(f"清除图片时: {e}")
+
+    def get_cell_value(self, sheet: xw.Sheet, row: int, col: int):
+        """获取单元格值"""
+        return sheet.cells(row, col).value
+
     def close(self):
         """关闭工作簿"""
         try:

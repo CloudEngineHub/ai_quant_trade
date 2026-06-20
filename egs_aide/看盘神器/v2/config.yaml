@@ -65,5 +65,15 @@ alert_popup_enabled: true
 # 设为 0 则不自动重载（仅启动时读取一次），设为 1 则每次刷新都重载
 config_reload_interval: 5
 
+# K 线图配置
+kline_count: 60              # K 线数量
+kline_freq: "d"              # 周期: d=日线 w=周线 m=月线
+kline_chart_type: "candle"   # 图表类型: candle=蜡烛图 ohlc=OHLC图
+kline_mav: [5, 10, 20]       # 均线周期
+kline_image_width: 600       # 图片宽度（像素）
+kline_image_height: 350      # 图片高度（像素）
+kline_display_row: 25        # K 线图显示起始行
+kline_display_col: 1         # K 线图显示起始列
+
 # 新闻显示条数
 news_max_rows: 50
