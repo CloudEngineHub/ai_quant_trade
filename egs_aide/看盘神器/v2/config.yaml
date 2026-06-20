@@ -1,0 +1,79 @@
+# Excel 盯盘工具 V2 配置文件
+# 修改此文件可自定义：刷新间隔、自选股、指数列表、显示列等
+
+# Excel 模板文件名
+excel_template: "看盘模板.xlsx"
+
+# 刷新间隔（秒）
+refresh_interval: 3
+
+# Sheet 名称映射（如需修改 Sheet 名称，改这里即可）
+sheets:
+  market_overview: "大盘"
+  detailed_quotes: "详细行情"
+  news: "新闻"
+  custom_watch: "个性定制看盘"
+  config: "配置"
+
+# 大盘指数列表（qstock 简称）
+market_indices:
+  - "上证指数"
+  - "深证成指"
+  - "创业板指"
+  - "沪深300"
+  - "上证50"
+  - "中证500"
+  - "科创50"
+
+# 自选股代码列表（用户可修改）
+watch_stocks:
+  - "中国平安"
+  - "贵州茅台"
+  - "宁德时代"
+  - "比亚迪"
+  - "招商银行"
+  - "东方财富"
+
+# 个性定制看盘显示列
+custom_watch_columns:
+  - "代码"
+  - "名称"
+  - "最新价"
+  - "涨跌幅"
+  - "涨跌额"
+  - "成交量"
+  - "成交额"
+  - "换手率"
+  - "最高"
+  - "最低"
+  - "开盘"
+  - "昨收"
+  - "刷新时间"
+
+# 预警条件列名（在"个性定制看盘"Sheet 中，这些列紧挨显示列右侧）
+# 用户在对应单元格填写数值即可启用预警，留空表示不监控该指标
+alert_columns:
+  - "涨跌幅下限"
+  - "涨跌幅上限"
+  - "价格下限"
+  - "价格上限"
+
+# 是否启用预警弹窗（达到条件时弹出提醒窗口）
+alert_popup_enabled: true
+
+# 配置重载间隔（每 N 次行情刷新后，重新从 Excel 读取股票代码和预警条件）
+# 设为 0 则不自动重载（仅启动时读取一次），设为 1 则每次刷新都重载
+config_reload_interval: 5
+
+# K 线图配置
+kline_count: 60              # K 线数量
+kline_freq: "d"              # 周期: d=日线 w=周线 m=月线
+kline_chart_type: "candle"   # 图表类型: candle=蜡烛图 ohlc=OHLC图
+kline_mav: [5, 10, 20]       # 均线周期
+kline_image_width: 600       # 图片宽度（像素）
+kline_image_height: 350      # 图片高度（像素）
+kline_display_row: 25        # K 线图显示起始行
+kline_display_col: 1         # K 线图显示起始列
+
+# 新闻显示条数
+news_max_rows: 50
