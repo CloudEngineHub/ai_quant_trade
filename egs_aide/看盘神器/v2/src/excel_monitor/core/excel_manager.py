@@ -31,8 +31,8 @@ class ExcelManager:
 
     def sheet_to_df(self, sheet: xw.Sheet) -> Tuple[pd.DataFrame, int, int]:
         """将 Sheet 转为 DataFrame，返回 (df, row_num, col_num)"""
-        row_num = sheet.api.UsedRange.Rows.count
-        col_num = sheet.api.UsedRange.Columns.count
+        row_num = sheet.api.UsedRange.Rows.Count
+        col_num = sheet.api.UsedRange.Columns.Count
 
         if row_num <= 1 and col_num <= 1:
             val = sheet.range((1, 1)).value
