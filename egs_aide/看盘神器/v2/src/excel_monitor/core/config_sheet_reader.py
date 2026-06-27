@@ -29,6 +29,10 @@ _SCALAR_MAP = {
     "预警弹窗": ("alert_popup_enabled", lambda v: str(v).strip().lower() in ("true", "1", "yes", "是")),
     "新闻条数": ("news_max_rows", int),
     "配置重载间隔": ("config_reload_interval", int),
+    "情绪条数": ("sentiment_max_rows", int),
+    "资金情绪Sheet": ("sentiment_sheet_enabled", lambda v: str(v).strip().lower() in ("true", "1", "yes", "是")),
+    "备选数据源": ("enabled_backup_sources",
+                  lambda v: [s.strip() for s in str(v).split(",") if s.strip()]),
 }
 
 

@@ -28,6 +28,7 @@ from excel_monitor.sheets.market_overview import MarketOverviewSheet
 from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
 from excel_monitor.sheets.news_sheet import NewsSheet
 from excel_monitor.sheets.custom_watch import CustomWatchSheet
+from excel_monitor.sheets.sentiment_sheet import SentimentSheet
 from excel_monitor.utils.template_generator import create_template
 
 
@@ -72,12 +73,15 @@ def main():
 
     # 3. 初始化组件
     excel_mgr = ExcelManager(template_path)
-    data_provider = DataProvider()
+    data_provider = DataProvider(cfg)
 
     # 3.5 从 Excel "配置" Sheet 读取配置，覆盖 YAML 默认值
     config_reader = ConfigSheetReader(excel_mgr)
     cfg = config_reader.read_config(cfg.sheets["config"], cfg)
+    # 配置重载后同步 enabled_backup_sources 到 DataProvider
+    data_provider.enabled_sources = list(cfg.enabled_backup_sources)
     logger.info(f"刷新间隔: {cfg.refresh_interval}s, 配置重载间隔: {cfg.config_reload_interval}次")
+    logger.info(f"备选数据源: {cfg.enabled_backup_sources}")
 
     # 4. 创建 Sheet Handlers
     handlers = [
@@ -90,6 +94,12 @@ def main():
         CustomWatchSheet(cfg.sheets["custom_watch"],
                          excel_mgr, data_provider, cfg),
     ]
+    # 资金情绪 Sheet（可选启用）
+    if cfg.sentiment_sheet_enabled:
+        handlers.append(
+            SentimentSheet(cfg.sheets["sentiment"],
+                           excel_mgr, data_provider, cfg)
+        )
 
     # 5. 初始化每个 Sheet
     for handler in handlers:

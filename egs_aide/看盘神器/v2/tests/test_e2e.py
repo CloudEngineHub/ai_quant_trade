@@ -32,6 +32,7 @@ from excel_monitor.sheets.market_overview import MarketOverviewSheet
 from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
 from excel_monitor.sheets.news_sheet import NewsSheet
 from excel_monitor.sheets.custom_watch import CustomWatchSheet
+from excel_monitor.sheets.sentiment_sheet import SentimentSheet
 from excel_monitor.utils.template_generator import create_template
 
 
@@ -92,11 +93,12 @@ def test_e2e_template_generation():
         # 用 openpyxl 验证结构
         wb = load_workbook(template_path)
         sheet_names = wb.sheetnames
-        _assert(len(sheet_names) == 5, f"Sheet 数量 = 5 (实际: {len(sheet_names)})")
+        _assert(len(sheet_names) == 6, f"Sheet 数量 = 6 (实际: {len(sheet_names)})")
         _assert("大盘" in sheet_names, "包含'大盘' Sheet")
         _assert("详细行情" in sheet_names, "包含'详细行情' Sheet")
         _assert("新闻" in sheet_names, "包含'新闻' Sheet")
         _assert("个性定制看盘" in sheet_names, "包含'个性定制看盘' Sheet")
+        _assert("资金情绪" in sheet_names, "包含'资金情绪' Sheet")
         _assert("配置" in sheet_names, "包含'配置' Sheet")
 
         # 验证"详细行情" Sheet 有表头和示例数据
@@ -132,10 +134,13 @@ def test_e2e_template_generation():
         _assert(ws_config["B3"].value == 3, "配置 B3 = 3")
         _assert(ws_config["A4"].value == "预警弹窗", "配置 A4 = '预警弹窗'")
         _assert(ws_config["A6"].value == "配置重载间隔", "配置 A6 = '配置重载间隔'")
-        _assert(ws_config["A9"].value == "自选股", "配置 A9 = '自选股'")
-        _assert(ws_config["B9"].value == "指数", "配置 B9 = '指数'")
-        _assert(ws_config["A10"].value == "中国平安", "配置 A10 = '中国平安'")
-        _assert(ws_config["B10"].value == "上证指数", "配置 B10 = '上证指数'")
+        _assert(ws_config["A7"].value == "情绪条数", "配置 A7 = '情绪条数'")
+        _assert(ws_config["A8"].value == "资金情绪Sheet", "配置 A8 = '资金情绪Sheet'")
+        _assert(ws_config["A9"].value == "备选数据源", "配置 A9 = '备选数据源'")
+        _assert(ws_config["A12"].value == "自选股", "配置 A12 = '自选股'")
+        _assert(ws_config["B12"].value == "指数", "配置 B12 = '指数'")
+        _assert(ws_config["A13"].value == "中国平安", "配置 A13 = '中国平安'")
+        _assert(ws_config["B13"].value == "上证指数", "配置 B13 = '上证指数'")
 
         # 验证表头样式（蓝色填充）
         fill = ws_detail["A1"].fill
@@ -408,10 +413,12 @@ def test_e2e_main_entry_import():
     from excel_monitor.config_loader import AppConfig, load_config
     from excel_monitor.core.data_provider import DataProvider
     from excel_monitor.core.excel_manager import ExcelManager
+    from excel_monitor.core.backup_sources import BackupSources
     from excel_monitor.sheets.market_overview import MarketOverviewSheet
     from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
     from excel_monitor.sheets.news_sheet import NewsSheet
     from excel_monitor.sheets.custom_watch import CustomWatchSheet
+    from excel_monitor.sheets.sentiment_sheet import SentimentSheet
     from excel_monitor.utils.template_generator import create_template
     from excel_monitor.utils.kline_chart import KLineChart
 
@@ -524,6 +531,92 @@ def test_e2e_kline_full_flow():
     print("  --> K线完整流程通过")
 
 
+def test_e2e_sentiment_full_refresh():
+    """E2E-11: 资金情绪 Sheet 完整刷新流程（多数据源）"""
+    _section("E2E-11: 资金情绪 Sheet 完整刷新流程")
+
+    cfg = AppConfig()
+    cfg.sentiment_max_rows = 3
+    cfg.guba_hot_max_rows = 5
+
+    mock_excel = MagicMock()
+    mock_data = MagicMock()
+
+    # 模拟 4 个数据源返回（北向资金 5 条 → 截断 3 条）
+    mock_data.get_north_money.return_value = pd.DataFrame({
+        "日期": [f"2024-01-0{i}" for i in range(1, 6)],
+        "当日净流入": [100, 200, 300, 400, 500],
+        "当日余额": [1000, 1200, 1500, 1100, 1600],
+    })
+    mock_data.get_weibo_sentiment.return_value = pd.DataFrame({
+        "股票代码": ["000001", "600519"],
+        "股票名称": ["平安银行", "贵州茅台"],
+        "微博舆情指数": [0.8, -0.3],
+    })
+    mock_data.get_news_sentiment.return_value = pd.DataFrame({
+        "日期": ["2024-01-01"],
+        "新闻情绪指数": [0.5],
+    })
+    mock_data.get_guba_hot_posts.return_value = pd.DataFrame({
+        "标题": [f"帖子{i}" for i in range(1, 6)],
+        "发布时间": [f"10:0{i}" for i in range(1, 6)],
+    })
+
+    sheet = SentimentSheet("资金情绪", mock_excel, mock_data, cfg)
+    sheet.sheet = MagicMock()
+
+    sheet.refresh()
+
+    # 验证 4 个数据源被调用
+    _assert(mock_data.get_north_money.call_count == 1, "北向资金被调用")
+    _assert(mock_data.get_weibo_sentiment.call_count == 1, "微博舆情被调用")
+    _assert(mock_data.get_news_sentiment.call_count == 1, "新闻情绪被调用")
+    _assert(mock_data.get_guba_hot_posts.call_count == 1, "股吧热门被调用")
+
+    # 验证股吧使用 guba_hot_max_rows=5
+    mock_data.get_guba_hot_posts.assert_called_once_with(page_size=5)
+
+    # 验证 4 个数据块都写入 Excel
+    _assert(mock_excel.write_df.call_count == 4,
+            f"Excel 写入 4 次 (实际: {mock_excel.write_df.call_count})")
+
+    # 验证北向资金被截断为 3 条
+    north_df = mock_excel.write_df.call_args_list[0][0][1]
+    _assert(len(north_df) == 3, f"北向资金截断为 3 条 (实际: {len(north_df)})")
+
+    print("  --> 资金情绪 Sheet 刷新流程通过")
+
+
+def test_e2e_sentiment_partial_failure_resilient():
+    """E2E-12: 资金情绪 Sheet 部分数据源失败仍能写入其他块"""
+    _section("E2E-12: 资金情绪 Sheet 部分失败容错")
+
+    cfg = AppConfig()
+    mock_excel = MagicMock()
+    mock_data = MagicMock()
+
+    # 北向资金有数据，微博舆情空（模拟失败），新闻情绪有数据，股吧空
+    mock_data.get_north_money.return_value = pd.DataFrame({
+        "日期": ["2024-01-01"], "当日净流入": [100],
+    })
+    mock_data.get_weibo_sentiment.return_value = pd.DataFrame()
+    mock_data.get_news_sentiment.return_value = pd.DataFrame({
+        "日期": ["2024-01-01"], "新闻情绪指数": [0.5],
+    })
+    mock_data.get_guba_hot_posts.return_value = pd.DataFrame()
+
+    sheet = SentimentSheet("资金情绪", mock_excel, mock_data, cfg)
+    sheet.sheet = MagicMock()
+
+    sheet.refresh()
+
+    # 只有 2 个非空块被写入
+    _assert(mock_excel.write_df.call_count == 2,
+            f"部分失败时写入 2 次 (实际: {mock_excel.write_df.call_count})")
+
+    print("  --> 资金情绪 Sheet 容错流程通过")
+
+
 # ===== 主入口 =====
 
 def run_all():
@@ -542,6 +635,8 @@ def run_all():
         test_e2e_main_entry_import,
         test_e2e_kline_chart_module,
         test_e2e_kline_full_flow,
+        test_e2e_sentiment_full_refresh,
+        test_e2e_sentiment_partial_failure_resilient,
     ]
 
     passed = 0

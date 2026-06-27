@@ -22,8 +22,26 @@ class AppConfig:
         "detailed_quotes": "详细行情",
         "news": "新闻",
         "custom_watch": "个性定制看盘",
+        "sentiment": "资金情绪",
         "config": "配置",
     })
+
+    # 启用的备选数据源（按 fallback 优先级排序）
+    # 可选值：akshare / eastmoney / tencent / netease / efinance
+    # 主源 qstock 始终启用；此处仅控制备选源
+    # 移除某个源名即关闭该源的 fallback 能力
+    enabled_backup_sources: List[str] = field(default_factory=lambda: [
+        "akshare", "eastmoney", "tencent", "netease", "efinance",
+    ])
+
+    # 是否启用资金情绪 Sheet（需要 akshare + eastmoney 备选源支持）
+    sentiment_sheet_enabled: bool = True
+
+    # 资金情绪 Sheet 显示条数
+    sentiment_max_rows: int = 20
+
+    # 股吧热门帖子显示条数
+    guba_hot_max_rows: int = 20
 
     # 大盘指数列表（qstock 简称）
     market_indices: List[str] = field(default_factory=lambda: [
