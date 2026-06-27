@@ -14,6 +14,7 @@ sheets:
   news: "新闻"
   custom_watch: "个性定制看盘"
   sentiment: "资金情绪"
+  stock_pool: "股票池"
   config: "配置"
 
 # 启用的备选数据源（参考 egs_data/ 目录下的数据源示例）
@@ -31,6 +32,13 @@ enabled_backup_sources:
 sentiment_sheet_enabled: true
 sentiment_max_rows: 20
 guba_hot_max_rows: 20
+
+# 股票池 Sheet（内置全 A 股列表 + 模糊搜索 + 下拉框选股）
+# 启用后可在"股票池"Sheet 搜索股票，复制到"个性定制看盘"
+# 同时"个性定制看盘"代码列会自动设置下拉框（引用股票池数据）
+stock_pool_sheet_enabled: true
+stock_pool_cache_path: "stock_pool.json"   # 本地缓存文件
+stock_pool_cache_days: 1                    # 缓存有效天数（超过自动刷新）
 
 # 大盘指数列表（qstock 简称）
 market_indices:

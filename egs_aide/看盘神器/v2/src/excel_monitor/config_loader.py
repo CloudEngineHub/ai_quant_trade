@@ -23,6 +23,7 @@ class AppConfig:
         "news": "新闻",
         "custom_watch": "个性定制看盘",
         "sentiment": "资金情绪",
+        "stock_pool": "股票池",
         "config": "配置",
     })
 
@@ -42,6 +43,14 @@ class AppConfig:
 
     # 股吧热门帖子显示条数
     guba_hot_max_rows: int = 20
+
+    # === 股票池配置 ===
+    # 是否启用股票池 Sheet（模糊搜索 + 下拉框选股）
+    stock_pool_sheet_enabled: bool = True
+    # 股票池本地缓存路径（JSON 格式，含时间戳）
+    stock_pool_cache_path: str = "stock_pool.json"
+    # 股票池缓存有效天数（超过则自动刷新）
+    stock_pool_cache_days: int = 1
 
     # 大盘指数列表（qstock 简称）
     market_indices: List[str] = field(default_factory=lambda: [

@@ -24,11 +24,13 @@ from excel_monitor.config_loader import AppConfig, load_config
 from excel_monitor.core.data_provider import DataProvider
 from excel_monitor.core.excel_manager import ExcelManager
 from excel_monitor.core.config_sheet_reader import ConfigSheetReader
+from excel_monitor.core.stock_pool import StockPool
 from excel_monitor.sheets.market_overview import MarketOverviewSheet
 from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
 from excel_monitor.sheets.news_sheet import NewsSheet
 from excel_monitor.sheets.custom_watch import CustomWatchSheet
 from excel_monitor.sheets.sentiment_sheet import SentimentSheet
+from excel_monitor.sheets.stock_pool_sheet import StockPoolSheet
 from excel_monitor.utils.template_generator import create_template
 
 
@@ -100,6 +102,18 @@ def main():
             SentimentSheet(cfg.sheets["sentiment"],
                            excel_mgr, data_provider, cfg)
         )
+    # 股票池 Sheet（可选启用）
+    stock_pool_sheet = None
+    if cfg.stock_pool_sheet_enabled:
+        cache_path = os.path.join(_BASE_DIR, cfg.stock_pool_cache_path)
+        stock_pool = StockPool(
+            cache_path=cache_path,
+            cache_days=cfg.stock_pool_cache_days,
+        )
+        stock_pool_sheet = StockPoolSheet(
+            cfg.sheets["stock_pool"], excel_mgr, data_provider, cfg, stock_pool
+        )
+        handlers.append(stock_pool_sheet)
 
     # 5. 初始化每个 Sheet
     for handler in handlers:
@@ -108,6 +122,17 @@ def main():
             handler.init()
         except Exception as e:
             logger.error(f"Sheet '{handler.name}' 初始化失败: {e}")
+
+    # 5.5 股票池初始化成功后，为"个性定制看盘"代码列设置下拉框
+    if stock_pool_sheet is not None and not stock_pool_sheet.pool.df.empty:
+        try:
+            custom_sheet = excel_mgr.get_sheet_by_name(cfg.sheets["custom_watch"])
+            if custom_sheet is not None:
+                stock_pool_sheet.setup_dropdown_for(
+                    custom_sheet, col=1, start_row=2, end_row=200
+                )
+        except Exception as e:
+            logger.warning(f"设置看盘 Sheet 下拉框失败: {e}（不影响手动输入）")
 
     # 6. 刷新循环
     logger.info(f"开始实时刷新，间隔 {cfg.refresh_interval} 秒...")

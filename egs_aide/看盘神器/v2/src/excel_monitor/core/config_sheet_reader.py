@@ -33,6 +33,9 @@ _SCALAR_MAP = {
     "资金情绪Sheet": ("sentiment_sheet_enabled", lambda v: str(v).strip().lower() in ("true", "1", "yes", "是")),
     "备选数据源": ("enabled_backup_sources",
                   lambda v: [s.strip() for s in str(v).split(",") if s.strip()]),
+    "股票池Sheet": ("stock_pool_sheet_enabled",
+                    lambda v: str(v).strip().lower() in ("true", "1", "yes", "是")),
+    "股票池缓存天数": ("stock_pool_cache_days", int),
 }
 
 

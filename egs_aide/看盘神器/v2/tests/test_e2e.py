@@ -93,12 +93,13 @@ def test_e2e_template_generation():
         # 用 openpyxl 验证结构
         wb = load_workbook(template_path)
         sheet_names = wb.sheetnames
-        _assert(len(sheet_names) == 6, f"Sheet 数量 = 6 (实际: {len(sheet_names)})")
+        _assert(len(sheet_names) == 7, f"Sheet 数量 = 7 (实际: {len(sheet_names)})")
         _assert("大盘" in sheet_names, "包含'大盘' Sheet")
         _assert("详细行情" in sheet_names, "包含'详细行情' Sheet")
         _assert("新闻" in sheet_names, "包含'新闻' Sheet")
         _assert("个性定制看盘" in sheet_names, "包含'个性定制看盘' Sheet")
         _assert("资金情绪" in sheet_names, "包含'资金情绪' Sheet")
+        _assert("股票池" in sheet_names, "包含'股票池' Sheet")
         _assert("配置" in sheet_names, "包含'配置' Sheet")
 
         # 验证"详细行情" Sheet 有表头和示例数据
@@ -137,10 +138,22 @@ def test_e2e_template_generation():
         _assert(ws_config["A7"].value == "情绪条数", "配置 A7 = '情绪条数'")
         _assert(ws_config["A8"].value == "资金情绪Sheet", "配置 A8 = '资金情绪Sheet'")
         _assert(ws_config["A9"].value == "备选数据源", "配置 A9 = '备选数据源'")
-        _assert(ws_config["A12"].value == "自选股", "配置 A12 = '自选股'")
-        _assert(ws_config["B12"].value == "指数", "配置 B12 = '指数'")
-        _assert(ws_config["A13"].value == "中国平安", "配置 A13 = '中国平安'")
-        _assert(ws_config["B13"].value == "上证指数", "配置 B13 = '上证指数'")
+        _assert(ws_config["A10"].value == "股票池Sheet", "配置 A10 = '股票池Sheet'")
+        _assert(ws_config["A11"].value == "股票池缓存天数", "配置 A11 = '股票池缓存天数'")
+        _assert(ws_config["A13"].value == "=== 列表配置 ===", "配置 A13 = '列表配置标题'")
+        _assert(ws_config["A14"].value == "自选股", "配置 A14 = '自选股'")
+        _assert(ws_config["B14"].value == "指数", "配置 B14 = '指数'")
+        _assert(ws_config["A15"].value == "中国平安", "配置 A15 = '中国平安'")
+        _assert(ws_config["B15"].value == "上证指数", "配置 B15 = '上证指数'")
+
+        # 验证"股票池" Sheet
+        ws_pool = wb["股票池"]
+        _assert(ws_pool["A1"].value == "搜索关键字:", "股票池 A1 = '搜索关键字:'")
+        _assert(ws_pool["A4"].value == "代码", "股票池 A4 = '代码'")
+        _assert(ws_pool["B4"].value == "名称", "股票池 B4 = '名称'")
+        _assert(ws_pool["C4"].value == "市场", "股票池 C4 = '市场'")
+        _assert(ws_pool["A5"].value == "000001", "股票池 A5 = '000001'")
+        _assert(ws_pool["B5"].value == "平安银行", "股票池 B5 = '平安银行'")
 
         # 验证表头样式（蓝色填充）
         fill = ws_detail["A1"].fill
@@ -414,11 +427,13 @@ def test_e2e_main_entry_import():
     from excel_monitor.core.data_provider import DataProvider
     from excel_monitor.core.excel_manager import ExcelManager
     from excel_monitor.core.backup_sources import BackupSources
+    from excel_monitor.core.stock_pool import StockPool
     from excel_monitor.sheets.market_overview import MarketOverviewSheet
     from excel_monitor.sheets.detailed_quotes import DetailedQuotesSheet
     from excel_monitor.sheets.news_sheet import NewsSheet
     from excel_monitor.sheets.custom_watch import CustomWatchSheet
     from excel_monitor.sheets.sentiment_sheet import SentimentSheet
+    from excel_monitor.sheets.stock_pool_sheet import StockPoolSheet
     from excel_monitor.utils.template_generator import create_template
     from excel_monitor.utils.kline_chart import KLineChart
 

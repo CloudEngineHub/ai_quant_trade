@@ -106,55 +106,82 @@ def create_template(output_path: str = None, config: AppConfig = None):
     ws5["A2"] = "数据来源: AKShare(北向资金/微博舆情/新闻情绪) + 东方财富(股吧热门)"
     ws5["A2"].font = Font(size=9, color="888888", italic=True)
 
-    # === Sheet 6: 配置 ===
-    ws6 = wb.create_sheet(cfg.sheets["config"])
+    # === Sheet 6: 股票池 ===
+    ws6 = wb.create_sheet(cfg.sheets["stock_pool"])
+    ws6["A1"] = "搜索关键字:"
+    ws6["A1"].font = Font(bold=True)
+    ws6["B1"] = ""  # 用户输入区
+    ws6["C1"] = "[搜索按钮在程序启动后自动出现]"
+    ws6["C1"].font = Font(size=9, color="888888", italic=True)
+    ws6["D1"] = "[显示全部按钮]"
+    ws6["D1"].font = Font(size=9, color="888888", italic=True)
+    ws6["A2"] = "提示: 在 B1 输入代码/名称/拼音首字母，点搜索按钮过滤"
+    ws6["A2"].font = Font(size=9, color="888888", italic=True)
+    # 表头（第 4 行）
+    ws6["A4"] = "代码"
+    ws6["B4"] = "名称"
+    ws6["C4"] = "市场"
+    _style_header(ws6["A4"])
+    _style_header(ws6["B4"])
+    _style_header(ws6["C4"])
+    # 示例数据（程序启动后会被真实股票池覆盖）
+    ws6["A5"] = "000001"
+    ws6["B5"] = "平安银行"
+    ws6["C5"] = "深圳"
+
+    # === Sheet 7: 配置 ===
+    ws7 = wb.create_sheet(cfg.sheets["config"])
     # 标题
-    ws6["A1"] = "=== 全局配置 ==="
-    ws6["A1"].font = Font(bold=True, size=14)
+    ws7["A1"] = "=== 全局配置 ==="
+    ws7["A1"].font = Font(bold=True, size=14)
     # 键值对表头
-    ws6["A2"] = "配置项"
-    ws6["B2"] = "值"
-    _style_header(ws6["A2"])
-    _style_header(ws6["B2"])
+    ws7["A2"] = "配置项"
+    ws7["B2"] = "值"
+    _style_header(ws7["A2"])
+    _style_header(ws7["B2"])
     # 标量配置项
-    ws6["A3"] = "刷新间隔(秒)"
-    ws6["B3"] = cfg.refresh_interval
-    ws6["A4"] = "预警弹窗"
-    ws6["B4"] = "true" if cfg.alert_popup_enabled else "false"
-    ws6["A5"] = "新闻条数"
-    ws6["B5"] = cfg.news_max_rows
-    ws6["A6"] = "配置重载间隔"
-    ws6["B6"] = cfg.config_reload_interval
-    ws6["A7"] = "情绪条数"
-    ws6["B7"] = cfg.sentiment_max_rows
-    ws6["A8"] = "资金情绪Sheet"
-    ws6["B8"] = "true" if cfg.sentiment_sheet_enabled else "false"
-    ws6["A9"] = "备选数据源"
-    ws6["B9"] = ",".join(cfg.enabled_backup_sources)
+    ws7["A3"] = "刷新间隔(秒)"
+    ws7["B3"] = cfg.refresh_interval
+    ws7["A4"] = "预警弹窗"
+    ws7["B4"] = "true" if cfg.alert_popup_enabled else "false"
+    ws7["A5"] = "新闻条数"
+    ws7["B5"] = cfg.news_max_rows
+    ws7["A6"] = "配置重载间隔"
+    ws7["B6"] = cfg.config_reload_interval
+    ws7["A7"] = "情绪条数"
+    ws7["B7"] = cfg.sentiment_max_rows
+    ws7["A8"] = "资金情绪Sheet"
+    ws7["B8"] = "true" if cfg.sentiment_sheet_enabled else "false"
+    ws7["A9"] = "备选数据源"
+    ws7["B9"] = ",".join(cfg.enabled_backup_sources)
+    ws7["A10"] = "股票池Sheet"
+    ws7["B10"] = "true" if cfg.stock_pool_sheet_enabled else "false"
+    ws7["A11"] = "股票池缓存天数"
+    ws7["B11"] = cfg.stock_pool_cache_days
 
     # 空行后是列表配置
-    ws6["A11"] = "=== 列表配置 ==="
-    ws6["A11"].font = Font(bold=True, size=14)
-    ws6["A12"] = "自选股"
-    ws6["B12"] = "指数"
-    _style_header(ws6["A12"])
-    _style_header(ws6["B12"])
+    ws7["A13"] = "=== 列表配置 ==="
+    ws7["A13"].font = Font(bold=True, size=14)
+    ws7["A14"] = "自选股"
+    ws7["B14"] = "指数"
+    _style_header(ws7["A14"])
+    _style_header(ws7["B14"])
     # 写入自选股和指数列表
     max_len = max(len(cfg.watch_stocks), len(cfg.market_indices))
     for i in range(max_len):
-        row = 13 + i
+        row = 15 + i
         if i < len(cfg.watch_stocks):
-            ws6.cell(row=row, column=1, value=cfg.watch_stocks[i])
+            ws7.cell(row=row, column=1, value=cfg.watch_stocks[i])
         if i < len(cfg.market_indices):
-            ws6.cell(row=row, column=2, value=cfg.market_indices[i])
+            ws7.cell(row=row, column=2, value=cfg.market_indices[i])
 
     # 设置列宽
-    for ws in [ws1, ws2, ws3, ws4, ws5, ws6]:
+    for ws in [ws1, ws2, ws3, ws4, ws5, ws6, ws7]:
         for col in ws.columns:
             ws.column_dimensions[col[0].column_letter].width = 15
 
-    ws6.column_dimensions["A"].width = 20
-    ws6.column_dimensions["B"].width = 20
+    ws7.column_dimensions["A"].width = 20
+    ws7.column_dimensions["B"].width = 20
 
     wb.save(path)
     print(f"模板已生成: {path}")
