@@ -29,7 +29,10 @@ class DetailedQuotesSheet(BaseSheet):
             self._logger.info(f"使用默认自选股: {self._stock_codes}")
 
     def refresh(self):
-        """刷新详细行情"""
+        """刷新详细行情
+
+        每个数据块独立处理：数据源未刷到时保留上次数据不变。
+        """
         self._logger.info("刷新详细行情...")
 
         # 1. 自选股实时行情
@@ -39,6 +42,7 @@ class DetailedQuotesSheet(BaseSheet):
                 self._write(df_rt, start_row=1, start_col=1)
                 row_offset = len(df_rt) + 3
             else:
+                self._logger.info("自选股行情未刷到，保留上次数据")
                 row_offset = 1
         else:
             row_offset = 1
@@ -48,8 +52,12 @@ class DetailedQuotesSheet(BaseSheet):
         if not df_billboard.empty:
             self._write(df_billboard, start_row=row_offset, start_col=1)
             row_offset += len(df_billboard) + 2
+        else:
+            self._logger.info("龙虎榜未刷到，保留上次数据")
 
         # 3. 盘口异动
         df_change = self.data.get_realtime_change()
         if not df_change.empty:
             self._write(df_change, start_row=row_offset, start_col=1)
+        else:
+            self._logger.info("盘口异动未刷到，保留上次数据")

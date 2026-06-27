@@ -36,10 +36,17 @@ class BaseSheet(ABC):
         pass
 
     def _write(self, df: pd.DataFrame, start_row: int = 1, start_col: int = 1):
-        """写入数据到 Sheet"""
+        """写入数据到 Sheet
+
+        重要：若 df 为空（数据源未刷到），直接返回，不清除旧数据，
+        保持上一次成功刷新的内容不变。
+        """
         if self.sheet is None:
             return
-        # 先清除旧数据
+        if df is None or df.empty:
+            # 数据源未刷到，保持原数据不变
+            return
+        # 先清除旧数据，再写入新数据
         self.excel_mgr.clear_range(self.sheet, start_row=start_row,
                                    start_col=start_col)
         self.excel_mgr.write_df(self.sheet, df, start_row, start_col)

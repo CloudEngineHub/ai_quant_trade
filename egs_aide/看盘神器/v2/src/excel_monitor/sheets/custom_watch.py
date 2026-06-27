@@ -279,6 +279,7 @@ class CustomWatchSheet(BaseSheet):
         # 获取实时行情
         df_rt = self.data.get_stock_realtime(self._stock_codes)
         if df_rt.empty:
+            self._logger.info("自选股行情未刷到，保留上次数据")
             return
 
         # 按配置列过滤

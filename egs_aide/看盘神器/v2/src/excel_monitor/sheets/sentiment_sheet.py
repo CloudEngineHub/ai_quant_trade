@@ -28,7 +28,10 @@ class SentimentSheet(BaseSheet):
         self._logger.info("资金情绪 Sheet 初始化完成")
 
     def refresh(self):
-        """刷新资金情绪数据"""
+        """刷新资金情绪数据
+
+        每个数据块独立处理：数据源未刷到时保留上次数据不变。
+        """
         self._logger.info("刷新资金情绪数据...")
 
         # 1. 北向资金（从第 1 行开始）
@@ -38,6 +41,7 @@ class SentimentSheet(BaseSheet):
             self._write(df_north, start_row=1, start_col=1)
             row_offset = len(df_north) + 3
         else:
+            self._logger.info("北向资金未刷到，保留上次数据")
             row_offset = 1
 
         # 2. 微博舆情报告
@@ -47,6 +51,7 @@ class SentimentSheet(BaseSheet):
             self._write(df_weibo, start_row=row_offset, start_col=1)
             row_offset += len(df_weibo) + 2
         else:
+            self._logger.info("微博舆情未刷到，保留上次数据")
             row_offset += 2
 
         # 3. 新闻情绪指数
@@ -56,6 +61,7 @@ class SentimentSheet(BaseSheet):
             self._write(df_news_sent, start_row=row_offset, start_col=1)
             row_offset += len(df_news_sent) + 2
         else:
+            self._logger.info("新闻情绪未刷到，保留上次数据")
             row_offset += 2
 
         # 4. 股吧热门帖子
@@ -64,6 +70,8 @@ class SentimentSheet(BaseSheet):
         )
         if not df_guba.empty:
             self._write(df_guba, start_row=row_offset, start_col=1)
+        else:
+            self._logger.info("股吧热门未刷到，保留上次数据")
 
         self._logger.info(
             f"资金情绪刷新完成: 北向={len(df_north)} 微博={len(df_weibo)} "
