@@ -95,6 +95,7 @@ plugins:
 nav:
   - 首页: index.md
   - 发布操作指南: 发布操作指南.md
+  - Cloudflare Pages 部署（国内访问）: Cloudflare_Pages_部署指南.md
   - 环境配置:
       - GPU 环境配置: 01_环境配置/01_GPU环境配置/01_Win下GPU配置.md
       - Python 环境配置: 01_环境配置/02_python环境配置/01_conda安装.md
