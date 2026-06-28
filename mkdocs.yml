@@ -1,0 +1,109 @@
+# MkDocs 项目配置文件
+# 文档站：AI量化交易操盘手
+# 框架：MkDocs Material（开源项目最流行的文档主题）
+# 本地预览：mkdocs serve
+# 本地构建：mkdocs build（产物在 site/ 目录，已 .gitignore）
+# 部署：GitHub Actions 自动发布到 GitHub Pages / Cloudflare Pages
+
+site_name: AI量化交易操盘手
+site_url: https://charliedream1.github.io/ai_quant_trade/
+site_description: 一站式AI量化交易平台 · 从学习、模拟到实盘
+site_author: charliedream1
+repo_url: https://github.com/charliedream1/ai_quant_trade
+repo_name: charliedream1/ai_quant_trade
+edit_uri: edit/master/docs/
+
+docs_dir: docs
+site_dir: site
+
+# 版权信息（页脚显示）
+copyright: Copyright &copy; 2026 charliedream1 · Apache-2.0 License
+
+# 主题：Material（开源项目最流行，搜索/暗色/中文支持开箱即用）
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs          # 顶部标签栏导航
+    - navigation.sections      # 侧边栏分组
+    - navigation.expand        # 默认展开所有章节
+    - navigation.top           # 返回顶部按钮
+    - search.suggest           # 搜索建议
+    - search.highlight         # 搜索高亮
+    - content.code.copy        # 代码块一键复制
+    - content.tabs.link        # 内容标签页
+  palette:
+    - scheme: default          # 亮色主题
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换暗色模式
+    - scheme: slate            # 暗色主题
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换亮色模式
+  font:
+    text: Noto Sans SC         # 中文字体
+    code: JetBrains Mono
+
+# Markdown 扩展
+markdown_extensions:
+  - admonition                 # 提示框
+  - pymdownx.details           # 可折叠详情
+  - pymdownx.superfences       # 增强代码块
+  - pymdownx.highlight:        # 代码高亮
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:           # 标签页
+      alternate_style: true
+  - pymdownx.tasklist:         # 任务列表
+      custom_checkbox: true
+  - pymdownx.emoji:            # emoji 支持
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.arithmatex:       # 数学公式
+      generic: true
+  - toc:                       # 目录
+      permalink: true
+  - attr_list                  # 属性列表（图片宽度等）
+  - md_in_html
+  - def_list
+  - footnotes
+
+# 数学公式渲染
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+# 页脚社交链接
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/charliedream1/ai_quant_trade
+
+# 插件
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
+  - tags                       # 标签页
+
+# 导航结构（基于 docs/ 目录）
+nav:
+  - 首页: index.md
+  - 发布操作指南: 发布操作指南.md
+  - 环境配置:
+      - GPU 环境配置: 01_环境配置/01_GPU环境配置/01_Win下GPU配置.md
+      - Python 环境配置: 01_环境配置/02_python环境配置/01_conda安装.md
+      - Conda 国内源: 01_环境配置/02_python环境配置/02_conda配置国内源.md
+      - Miniconda 安装: 01_环境配置/02_python环境配置/03_mini_conda安装.md
+  - 常见问题:
+      - GitHub 问题: 02_常见问题/02_Github问题.md
+      - NumPy 版本问题: 02_常见问题/03_numpy_version_issue.md
+      - Python 包依赖: 02_常见问题/01_python包依赖问题/README.md
+  - 社区:
+      - 知识星球介绍: 03_星球使用和介绍/01_星球介绍.md
+      - 新人指南: 03_星球使用和介绍/02_新人使用指南.md

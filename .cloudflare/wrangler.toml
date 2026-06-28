@@ -1,0 +1,9 @@
+# Cloudflare Pages 配置（用于 wrangler CLI 直接部署，可选）
+# 详见：https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+#
+# 大多数情况建议直接用 Cloudflare Pages 控制台 + GitHub 集成（自动部署），
+# 此文件仅供命令行手动部署时使用：wrangler pages deploy site --project-name ai-quant-trade-docs
+
+name = "ai-quant-trade-docs"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "site"

@@ -1,0 +1,72 @@
+# MkDocs 文档站自动部署到 GitHub Pages
+# 当 master 分支的文档相关文件变更时，自动构建并发布
+#
+# 首次使用需在 GitHub 仓库 Settings → Pages → Source 选择 "GitHub Actions"
+# 详见：docs/发布操作指南.md
+name: Deploy MkDocs to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'mkdocs.yml'
+      - 'index.md'
+      - 'docs/**'
+      - 'egs_*/README.md'
+      - 'egs_skill/**/*.md'
+      - 'a_全网优秀资源/**/*.md'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - '.github/workflows/docs-pages.yml'
+  # 支持手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一个部署
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装 MkDocs Material 及依赖
+        run: |
+          pip install --no-cache-dir \
+            "mkdocs>=1.6" \
+            "mkdocs-material>=9.5" \
+            "mkdocs-material-extensions>=1.3" \
+            "pymdown-extensions>=10.7"
+
+      - name: 构建文档站
+        run: mkdocs build --clean
+
+      - name: 上传构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
