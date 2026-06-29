@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+from bisect import bisect_left
 from dataclasses import dataclass
 from itertools import product
 from typing import Dict, Iterable, List, Optional, Sequence
 
 import pandas as pd
+
+from egs_trade.vanilla.momentum_rotation.metrics import calculate_metrics
 
 
 @dataclass(frozen=True)
@@ -144,8 +147,6 @@ class MomentumRotationBacktester:
 
         equity_curve = pd.DataFrame(equity_rows)
         trades = pd.DataFrame(trade_rows)
-        from egs_trade.vanilla.momentum_rotation.metrics import calculate_metrics
-
         metrics = calculate_metrics(equity_curve, self.benchmark_data)
         return BacktestResult(equity_curve, trades, metrics, self.params)
 
@@ -169,8 +170,8 @@ class MomentumRotationBacktester:
         return dates
 
     def _previous_available_date(self, trade_date):
-        previous = [d for d in self.trade_dates if d < trade_date]
-        return previous[-1] if previous else None
+        idx = bisect_left(self.trade_dates, trade_date)
+        return self.trade_dates[idx - 1] if idx else None
 
     def _should_rebalance(self, trade_date, previous_run_date, run_index):
         if run_index == 0:

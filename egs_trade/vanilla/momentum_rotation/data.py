@@ -146,7 +146,6 @@ def load_tushare_market_data(
         raise ValueError("No Tushare daily data returned for %s to %s" % (start, end))
 
     daily = pd.concat(frames, ignore_index=True)
-    daily = daily.rename(columns={"vol": "vol", "amount": "amount"})
     daily.to_csv(daily_path, index=False)
 
     if benchmark:
